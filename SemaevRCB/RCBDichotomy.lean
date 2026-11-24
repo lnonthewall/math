@@ -10,26 +10,25 @@ import Mathlib.Tactic
 @[expose] public section
 
 /-!
-# Quadratic-Reciprocity Rank Dichotomy for Complete Projective Addition (`RCBDichotomy`)
+# Rank Dichotomy for `I₂ ⊗₁,₂ ε₃` and Projective `j = 0` Addition (`RCBDichotomy`)
 
-Formalizes **Main Theorem A (Theorem 1.1)** of Paper 1 (*Exact Bilinear Complexity of Complete
-Projective Elliptic Curve Addition and Semaev's Summation Polynomial $S_4$*):
+Formalizes **Theorem 1.1** (the `char K ≠ 2, 3` dichotomy steps) and its **Proposition 1.3**
+transfer to `T_RCB` of Paper 1 (*Arithmetic Rank Dichotomy of the `2 × 3` Maximal-Minors Tensor
+and Shared-Input Cross Products*):
 
-Over every field `K` with `char K ≠ 2, 3` and every `b ∈ Kˣ`:
+Over every field `K` with `char K ≠ 2, 3` (and every `b ∈ Kˣ` for `T_RCB`):
 1. **Step 1 (Koszul flattening lower bound):** The `18 × 18` Koszul flattening `Φ` of
    `I₂ ⊗₁,₂ ε₃` maps pure tensors to rank `≤ 2` over any field (including `RatFunc K`) and has
-   `det Φ(I₂ ⊗₁,₂ ε₃) = 4 ≠ 0`, yielding the unconditional formal border-rank lower bound
-   `brk_K(T_RCB) ≥ 9`.
+   `det Φ(I₂ ⊗₁,₂ ε₃) = 4 ≠ 0`, yielding the unconditional formal border-rank lower bound `≥ 9`.
 2. **Step 2 (Universal formal border rank 9):** Explicit `9`-term `(1,2)`-symmetric polynomial
-   degeneration over `K[ε]` proving `HasSym12FormalBorderRankLe (T_RCB K b) 9` and
-   `HasFormalBorderRankLe (T_RCB K b) 9` unconditionally.
+   degeneration over `K[ε]` proving `HasSym12FormalBorderRankLe (symEps3 K) 9` (and transfer to
+   `T_RCB K b` via Proposition 1.3).
 3. **Step 3 (Hesse rank-9 construction when `-3 ∈ (Kˣ)²`):** Explicit `9`-term `(1,2)`-symmetric
-   Hesse `(9₄, 12₃)` decomposition proving `HasSym12RankLe (T_RCB K b) 9` whenever
-   `IsSquare (-3 : K)`.
+   Hesse `(9₄, 12₃)` decomposition proving `HasSym12RankLe (symEps3 K) 9` (and `T_RCB K b`)
+   whenever `IsSquare (-3 : K)`.
 4. **Step 4 (Universal 10-term upper bound):** Explicit `5`-term `ℤ[1/2]` decomposition of `ε₃`
-   polarized to a `10`-term `(1,2)`-symmetric decomposition of `T_RCB` over every field `K`
-   (`char K ≠ 2, 3`).
-5. **Step 5 (Arbitrary-field rank-9 obstruction):** Complete formal proof of Section 3.2:
+   polarized to a `10`-term `(1,2)`-symmetric decomposition of `symEps3 K` (and `T_RCB K b`).
+5. **Step 5 (Arbitrary-field rank-9 obstruction):** Complete formal proof of Section 3.1 (Step 5):
    any `9`-term decomposition of `I₂ ⊗₁,₂ ε₃` over an arbitrary field `K` (`char K ≠ 2, 3`)
    induces zero-slack complementary idempotent projections `P_r P_s = δ_{rs} P_r` on `K¹⁸`
    (without assuming inner-product nondegeneracy on isotropic `w_r`), diagonal `SL₂` alignment
@@ -37,9 +36,11 @@ Over every field `K` with `char K ≠ 2, 3` and every `b ∈ Kˣ`:
    equiangularity `(ν_rᵀ w_s)(ν_sᵀ w_r) / (Δ_r Δ_s) = 1/4`, and nine rank-`1` idempotents
    `Q_r ∈ Mat₃(K)` with trace Gram matrix `G_Q = (3/4) I₉ + (1/4) J₉` (`det G_Q = 3(81/256)²`)
    congruent to the standard trace form (`det G_std = -1`), forcing `-3 ∈ (Kˣ)²`.
-6. **Main Theorem A & Corollaries:** Complete dichotomy `rk_K(T_RCB) = rk_K^{sym_{1,2}}(T_RCB) = 9`
-   iff `IsSquare (-3 : K)` and `10` otherwise, specialized to `ℚ`, `ℝ`, `ℂ`, `AlgebraicClosure K`,
-   and prime fields `𝔽_p` (`p ≥ 5`, `p ≡ 1` vs `p ≡ 2 (mod 3)` via quadratic reciprocity).
+6. **Proposition 1.3 Transfer & Field Corollaries:** Complete dichotomy
+   `rk_K(T_RCB) = rk_K^{sym_{1,2}}(T_RCB) = 9` iff `IsSquare (-3 : K)` and `10` otherwise,
+   specialized to `ℚ`, `ℝ`, `ℂ`, `AlgebraicClosure K`, and prime fields `𝔽_p` (`p ≥ 5`,
+   `p ≡ 1` vs `p ≡ 2 (mod 3)` via quadratic reciprocity). (The `char K = 3` rank-`9` obstruction
+   and all-characteristic `char K ≠ 2` dichotomy are completed in `GeneralMinorsAndChar3.lean`.)
 -/
 
 namespace SemaevRCB
@@ -311,7 +312,7 @@ abbrev Idx9 := Fin 3 × Fin 3
 abbrev Idx18 := Fin 2 × Idx9
 
 /-- Coefficient array `c` of the `18 × 18` Koszul flattening `X_C^{∧1}` on
-`(K² ⊗ K³) ⊗ (K² ⊗ K³) ⊗ K³` (Equation (3.2) of Paper 1). -/
+`(K² ⊗ K³) ⊗ (K² ⊗ K³) ⊗ K³` (Equation (3.1) of Paper 1). -/
 def koszulCoeff (K : Type*) [CommRing K] :
     Idx18 → Idx18 → (Fin 2 × Fin 3) → (Fin 2 × Fin 3) → Fin 3 → K :=
   fun row col p q k =>
@@ -414,7 +415,7 @@ theorem koszul_rankOne_le_two {K F : Type*} [CommRing K] [Field F]
     _ ≤ Module.finrank F (Fin 2 → F) := LinearMap.finrank_range_le A.mulVecLin
     _ = 2 := by simp
 
-/-- The `9 × 9` block `Φ : Mat₃(K) → Mat₃(K)`, `Φ(A) = (Tr A) I₃ - Aᵀ` (Equation (3.3)). -/
+/-- The `9 × 9` block `Φ : Mat₃(K) → Mat₃(K)`, `Φ(A) = (Tr A) I₃ - Aᵀ` (Equation (3.2)). -/
 def koszulPhi9 (K : Type*) [CommRing K] : Matrix Idx9 Idx9 K :=
   fun jl im =>
     (if im.1 = im.2 ∧ jl.1 = jl.2 then 1 else 0) -
@@ -483,7 +484,7 @@ def blockIdx9Equiv : Fin 3 ⊕ (Fin 2 ⊕ (Fin 2 ⊕ Fin 2)) ≃ Idx9 where
   right_inv p := by
     rcases p with ⟨i, j⟩; fin_cases i <;> fin_cases j <;> rfl
 
-/-- `det(Φ) = 2 · (-1)⁵ · (+1)³ = -2` over any commutative ring `K`. -/
+/-- `det(Φ) = 2 · (-1)³ = -2` over any commutative ring `K` (Equation (3.3)). -/
 theorem det_koszulPhi9 (K : Type*) [CommRing K] : (koszulPhi9 K).det = -2 := by
   rw [← Matrix.det_reindex_self blockIdx9Equiv.symm (koszulPhi9 K)]
   let D3 : Matrix (Fin 3) (Fin 3) K := ![![0, 1, 1], ![1, 0, 1], ![1, 1, 0]]
@@ -673,7 +674,7 @@ theorem symEps3_hasSym12FormalBorderRankLe_nine {K : Type*} [Field K] (h2 : (2 :
   rw [hdeg0, hdeg2, map_zero, zero_add]
   ring
 
-/-- **Theorem 1.1, Step 2 (`T_RCB` universal formal border rank 9):**
+/-- **Proposition 1.3 / Theorem 1.1, Step 2 (`T_RCB` universal formal border rank 9):**
 Over every field `K` with `char K ≠ 2, 3` and `b ≠ 0`, both the `(1,2)`-symmetric and ordinary
 formal border rank of `T_RCB K b` equal `9`. -/
 theorem T_RCB_hasSym12FormalBorderRankLe_nine {K : Type*} [Field K]
@@ -813,7 +814,7 @@ theorem symEps3_hasSym12RankLe_nine_of_isSquare_neg_three {K : Type*} [Field K]
     fin_cases ip <;> fin_cases iq <;> fin_cases k <;>
       simp [Fin.sum_univ_three, cyc1, cyc2, symEps3]
 
-/-- **Theorem 1.1, Step 3 (`T_RCB` symmetric rank 9 when `-3` is a square):**
+/-- **Proposition 1.3 / Theorem 1.1, Step 3 (`T_RCB` symmetric rank 9 when `-3` is a square):**
 Whenever `IsSquare (-3 : K)` (`char K ≠ 2, 3`, `b ≠ 0`), `HasSym12RankLe (T_RCB K b) 9` and
 `HasTensorRankLe (T_RCB K b) 9`. -/
 theorem T_RCB_hasSym12RankLe_nine_of_isSquare_neg_three {K : Type*} [Field K]
@@ -922,7 +923,7 @@ theorem symEps3_hasSym12RankLe_ten {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) :
     simp only [hm0, hm1, one_ne_zero, ↓reduceIte, hd0, hd1]
     ring
 
-/-- **Theorem 1.1, Step 4 (`T_RCB` universal `(1,2)`-symmetric rank `≤ 10`):**
+/-- **Proposition 1.3 / Theorem 1.1, Step 4 (`T_RCB` universal `(1,2)`-symmetric rank `≤ 10`):**
 Over every field `K` (`char K ≠ 2, 3`, `b ≠ 0`), `HasSym12RankLe (T_RCB K b) 10` and
 `HasTensorRankLe (T_RCB K b) 10`. -/
 theorem T_RCB_hasSym12RankLe_ten {K : Type*} [Field K]
@@ -972,7 +973,7 @@ def vecTensor18 {K : Type*} [CommRing K] (v : Fin 2 × Fin 3 → K) (β : Fin 3 
 def matG3 {K : Type*} [CommRing K] (u v : Fin 2 × Fin 3 → K) : Matrix (Fin 3) (Fin 3) K :=
   fun i j => u (0, i) * v (0, j) + u (1, i) * v (1, j)
 
-/-- `3 × 3` matrix `M(u, v) = (1/2) G(u, v) - G(u, v)ᵀ` from Section 3.2 of Paper 1. -/
+/-- `3 × 3` matrix `M(u, v) = (1/2) G(u, v) - G(u, v)ᵀ` from Section 3.1 (Step 5) of Paper 1. -/
 def matM3 {K : Type*} [Field K] (u v : Fin 2 × Fin 3 → K) : Matrix (Fin 3) (Fin 3) K :=
   fun i j => (2 : K)⁻¹ * matG3 u v i j - matG3 u v j i
 
@@ -992,7 +993,7 @@ lemma dot3_matM3_mulVec {K : Type*} [Field K]
   ring
 
 /-- Action of `(u_s ⊗ v_s ⊗ w_s)_C^{∧1} (T_C^{∧1})⁻¹` on any `v₀ ⊗ β ∈ K¹⁸`:
-`P_s (v₀ ⊗ β) = v_s ⊗ (w_s × (M_{s,0} β))` (Section 3.2.1 of Paper 1). -/
+`P_s (v₀ ⊗ β) = v_s ⊗ (w_s × (M_{s,0} β))` (Section 3.1, Step 5.1 of Paper 1). -/
 lemma koszulRankOne_mul_inv18_vecTensor {K : Type*} [Field K]
     (u_s v_s : Fin 2 × Fin 3 → K) (w_s : Fin 3 → K)
     (v₀ : Fin 2 × Fin 3 → K) (β : Fin 3 → K) :
@@ -1064,7 +1065,7 @@ theorem det_stdTraceGram9 (K : Type*) [CommRing K] : (stdTraceGram9 K).det = -1 
   ring
 
 /-- Determinant of the `9 × 9` equiangular Gram matrix `G_Q = (3/4) I₉ + (1/4) J₉`:
-`det(G_Q) = 3 · (81 / 256)²` over any field `K` with `char K ≠ 2` (Equation (3.15)). -/
+`det(G_Q) = 3 · (81 / 256)²` over any field `K` with `char K ≠ 2` (Equation (3.11)). -/
 def equiangularGram9 (K : Type*) [Field K] : Matrix (Fin 9) (Fin 9) K :=
   fun r s => if r = s then 1 else (4 : K)⁻¹
 
@@ -1202,7 +1203,7 @@ theorem det_equiangularGram9 {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) :
     rw [Matrix.det_mul, Matrix.det_mul, hR1_det, hC1_det, one_mul, mul_one]
   rw [← hdet_rel, hU_det]
 
-/-- **Theorem 1.1, Step 5 (Arbitrary-field rank-9 obstruction — Section 3.2 of Paper 1):**
+/-- **Theorem 1.1, Step 5 (Arbitrary-field rank-9 obstruction — Section 3.1 of Paper 1):**
 Over *every* field `K` with `char K ≠ 2, 3`, if `I₂ ⊗₁,₂ ε₃` admits a `9`-term tensor
 decomposition over `K`, then `-3` is a square in `K`. -/
 theorem rank_9_implies_isSquare_neg_three {K : Type*} [Field K]
@@ -1317,7 +1318,7 @@ theorem rank_9_implies_isSquare_neg_three {K : Type*} [Field K]
     by_cases hsr : s = r
     · subst hsr; simp [← hvec_eq]
     · simp [hsr]
-  -- Derive Equations (I) and (II) of Section 3.2.1
+  -- Derive Equations (3.6) and (3.7) of Section 3.1 (Step 5.1)
   have hcross_rel : ∀ (s r : Fin 9) (β : Fin 3 → K), dot3 (w r) β = 0 →
       cross3 (w s) (matM3 (u s) (v r) *ᵥ β) = if s = r then β else 0 := by
     intro s r β hβ
@@ -1390,7 +1391,7 @@ theorem rank_9_implies_isSquare_neg_three {K : Type*} [Field K]
       ring
     rw [hexp, h10, h20] at h0
     linear_combination h0
-  -- Equation (3.10): β₁ × β₂ = (3/2)(β₁ᵀ G_{rr} β₂) w_r
+  -- Equation (3.8): β₁ × β₂ = (3/2)(β₁ᵀ G_{rr} β₂) w_r
   have hdiag_cross : ∀ (r : Fin 9) (β₁ β₂ : Fin 3 → K),
       dot3 (w r) β₁ = 0 → dot3 (w r) β₂ = 0 →
       cross3 β₁ β₂ = ((3 * (2 : K)⁻¹) * dot3 β₁ (matG3 (u r) (v r) *ᵥ β₂)) • w r := by
@@ -1442,7 +1443,7 @@ theorem rank_9_implies_isSquare_neg_three {K : Type*} [Field K]
     have hsq0 : dot3 p₀ (matG3 (u r) (v r) *ᵥ p₁) * dot3 p₀ (matG3 (u r) (v r) *ᵥ p₁) = 0 := by
       linear_combination hdet2
     exact hg01_ne (mul_self_eq_zero.mp hsq0)
-  -- Explicit formula V_r = (2 / (3 Δ_r)) U_r J + w_r λ_rᵀ (Equation (3.11))
+  -- Explicit formula V_r = (2 / (3 Δ_r)) U_r J + w_r λ_rᵀ (Equation (3.9))
   have hVr_decomp : ∀ r : Fin 9,
       ∃ lam1 lam2 : K,
         v1 r = (2 * (3 * Δ r)⁻¹) • u2 r + lam1 • w r ∧
@@ -1758,7 +1759,7 @@ theorem rank_9_implies_isSquare_neg_three {K : Type*} [Field K]
     have hzero := (mul_eq_zero.mp hcomb).resolve_left hc_b_ne
     refine ⟨κ, hκ_ne, hk1, hk2, ?_⟩
     linear_combination hzero
-  -- Equation (3.13): 4 (ν_rᵀ w_s)(ν_sᵀ w_r) = Δ_r Δ_s for all r ≠ s
+  -- Equation (3.10): 4 (ν_rᵀ w_s)(ν_sᵀ w_r) = Δ_r Δ_s for all r ≠ s
   have hbiorthog_quarter : ∀ {r s : Fin 9}, r ≠ s →
       4 * (dot3 (ν r) (w s) * dot3 (ν s) (w r)) = Δ r * Δ s := by
     intro r s hrs
@@ -1874,9 +1875,9 @@ theorem T_RCB_rank_9_implies_isSquare_neg_three {K : Type*} [Field K]
   rank_9_implies_isSquare_neg_three h2 h3
     (((T_RCB_equiv_I2_eps3 h2 h3 hb).hasTensorRankLe_iff 9).mp hr9)
 
-/-! ## Section 6: Main Theorem A Packaging & Field Corollaries (`ℚ`, `ℝ`, `ℂ`, `𝔽_p`) -/
+/-! ## Section 6: Proposition 1.3 Transfer & Field Corollaries (`ℚ`, `ℝ`, `ℂ`, `𝔽_p`) -/
 
-/-- **Main Theorem A — Part 1 (`rcb_border_rank_nine`, Theorem 1.1 Equation (1.4)):**
+/-- **Proposition 1.3 — Part 1 (`rcb_border_rank_nine`, via Theorem 1.1 Equation (1.3)):**
 Over *every* field `K` with `char K ≠ 2, 3` and every `b ≠ 0`, both the ordinary and
 `(1,2)`-symmetric formal algebraic border rank of `T_RCB K b` equal `9`. -/
 theorem rcb_border_rank_nine {K : Type*} [Field K]
@@ -1889,7 +1890,7 @@ theorem rcb_border_rank_nine {K : Type*} [Field K]
   rcases T_RCB_borderRank_ge_nine h2 h3 hb with ⟨hge, _, hn8⟩
   exact ⟨hs9, hb9, hge, hn8⟩
 
-/-- **Main Theorem A — Part 2 (`rcb_rank_dichotomy`, Theorem 1.1 Equation (1.5)):**
+/-- **Proposition 1.3 — Part 2 (`rcb_rank_dichotomy`, via Theorem 1.1 Equation (1.4)):**
 Over *every* field `K` with `char K ≠ 2, 3` and every `b ≠ 0`:
 - `HasTensorRankLe (T_RCB K b) 9 ↔ IsSquare (-3 : K)` and
   `HasSym12RankLe (T_RCB K b) 9 ↔ IsSquare (-3 : K)`;
@@ -1923,7 +1924,7 @@ theorem rcb_rank_dichotomy {K : Type*} [Field K]
   subst hr9_eq
   exact hnsq (hiff_rk.mp hr)
 
-/-- **Corollary (Theorem 1.1 over `ℚ`):** `rk_ℚ(T_RCB) = rk_ℚ^{sym_{1,2}}(T_RCB) = 10` and
+/-- **Corollary (Proposition 1.3 & Theorem 1.1 over `ℚ`):** `rk_ℚ(T_RCB) = rk_ℚ^{sym_{1,2}}(T_RCB) = 10` and
 `brk_ℚ(T_RCB) = 9` for every `b ∈ ℚˣ`. -/
 theorem rcb_rank_rat {b : ℚ} (hb : b ≠ 0) :
     ¬ HasTensorRankLe (T_RCB ℚ b) 9 ∧
@@ -1940,7 +1941,7 @@ theorem rcb_rank_rat {b : ℚ} (hb : b ≠ 0) :
     ⟨hbs9, _, _, hbn8⟩
   exact ⟨fun h9 => hnsq (hiff9.mp h9), hs10, hbs9, hbn8⟩
 
-/-- **Corollary (Theorem 1.1 over `ℝ`):** `rk_ℝ(T_RCB) = rk_ℝ^{sym_{1,2}}(T_RCB) = 10` and
+/-- **Corollary (Proposition 1.3 & Theorem 1.1 over `ℝ`):** `rk_ℝ(T_RCB) = rk_ℝ^{sym_{1,2}}(T_RCB) = 10` and
 `brk_ℝ(T_RCB) = 9` for every `b ∈ ℝˣ`. -/
 theorem rcb_rank_real {b : ℝ} (hb : b ≠ 0) :
     ¬ HasTensorRankLe (T_RCB ℝ b) 9 ∧
@@ -1957,7 +1958,7 @@ theorem rcb_rank_real {b : ℝ} (hb : b ≠ 0) :
     ⟨hbs9, _, _, hbn8⟩
   exact ⟨fun h9 => hnsq (hiff9.mp h9), hs10, hbs9, hbn8⟩
 
-/-- **Corollary (Theorem 1.1 over `ℂ`):** `rk_ℂ(T_RCB) = rk_ℂ^{sym_{1,2}}(T_RCB) = 9` and
+/-- **Corollary (Proposition 1.3 & Theorem 1.1 over `ℂ`):** `rk_ℂ(T_RCB) = rk_ℂ^{sym_{1,2}}(T_RCB) = 9` and
 `brk_ℂ(T_RCB) = 9` for every `b ∈ ℂˣ`. -/
 theorem rcb_rank_complex {b : ℂ} (hb : b ≠ 0) :
     HasSym12RankLe (T_RCB ℂ b) 9 ∧
@@ -1976,7 +1977,7 @@ theorem rcb_rank_complex {b : ℂ} (hb : b ≠ 0) :
   exact ⟨hs9, hr9,
     (T_RCB_borderRank_ge_nine (by norm_num : (2 : ℂ) ≠ 0) (by norm_num : (3 : ℂ) ≠ 0) hb).2.2⟩
 
-/-- **Corollary (Theorem 1.1 over `AlgebraicClosure K`):** Over the algebraic closure of any field
+/-- **Corollary (Proposition 1.3 & Theorem 1.1 over `AlgebraicClosure K`):** Over the algebraic closure of any field
 `K` with `char K ≠ 2, 3` (`b ≠ 0`), `T_RCB` has exact ordinary and `(1,2)`-symmetric rank `9`. -/
 theorem rcb_rank_algebraicClosure {K : Type*} [Field K]
     (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0) {b : K} (hb : b ≠ 0) :
@@ -2044,7 +2045,7 @@ theorem zmod_isSquare_neg_three_iff {p : ℕ} [Fact p.Prime] (hp5 : 5 ≤ p) :
   rw [hiff1]
   omega
 
-/-- **Corollary (Theorem 1.1 over prime fields `𝔽_p`, `p ≥ 5`):**
+/-- **Corollary (Proposition 1.3 & Theorem 1.1 over prime fields `𝔽_p`, `p ≥ 5`):**
 For every prime `p ≥ 5` and `b ∈ (ZMod p)ˣ`:
 - `p ≡ 1 (mod 3)` implies `rk_{𝔽_p}(T_RCB) = rk_{𝔽_p}^{sym_{1,2}}(T_RCB) = 9`;
 - `p ≡ 2 (mod 3)` implies `rk_{𝔽_p}(T_RCB) = rk_{𝔽_p}^{sym_{1,2}}(T_RCB) = 10` (with formal

@@ -16,9 +16,10 @@ import Mathlib.Tactic
 # Shared Definitions for `CarryAutomaton`
 
 Core definitions for the canonical modular Addition–XOR relation `M_t`, its borrow-core
-biadjacency matrix `K_t` (parameterized cleanly by `s = t - 1` via `K_coreRel s` / `K_coreMat`),
-the `i`-bit borrow indicator vector `borrowVec`, bicliques, exact biclique covers,
-zero-duplicate biclique partitions, label weight, and maximum vertex load.
+biadjacency matrix (denoted `C_t` in Paper 2 and parameterized cleanly by `s = t - 1` via
+`K_coreRel s` / `K_coreMat` / `K_mat` in Lean), the `i`-bit borrow indicator vector `borrowVec`,
+bicliques, exact biclique covers, zero-duplicate biclique partitions, label weight, and maximum
+vertex load.
 -/
 
 namespace CarryAutomaton

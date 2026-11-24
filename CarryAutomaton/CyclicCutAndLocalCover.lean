@@ -9,42 +9,43 @@ import Mathlib.Tactic
 @[expose] public section
 
 /-!
-# Optimal Cyclic-Shift Carry-Cut, Universal Optimality, and Local Cover/Partition Numbers
+# Optimal Cyclic Carry-Cut Partitions, Cover Invariants, and Local Cover Numbers
 
-Formalization of Section 4 (Lemma 4.1, Definition 4.2, Theorem 4.3) and Appendix A
-Proposition A.1 of the Paper 2 manuscript:
-1. Lemma 4.1: Modular-quotient carry identity (both `c_in = 0` and general `c_in ∈ {0, 1}`),
+Formalization of Section 2 (Lemma 2.2, Definition 2.3, Theorem 2.4), Section 3 (Theorem 3.2,
+Proposition 3.3), and Appendix A (Proposition A.1) of Paper 2 (where the borrow core `C_t` is
+formalized as `K_coreRel s` with `s = t - 1`, and the cyclic carry-cut partition `𝒫_m` is named
+`mechanismIICStar`):
+1. Lemma 2.2: Modular-quotient carry identity (both `c_in = 0` and general `c_in ∈ {0, 1}`),
    bit-parallel borrow formula, and two's-complement trailing-zero wrap mask (`BitVec`).
-2. Definition 4.2 & Theorem 4.3(a): Mechanism `II-C*` family of exact zero-duplicate
-   biclique partitions of `M_t` (and projected core partitions of `K_t`) with `2^(2t-1)` keys,
-   constant row load `2^(t-1-m)`, constant column load `2^m`, and exact biclique sizes
-   `|U_ℓ| = 2^(t-m)` and `|V_ℓ| = 2^(m+1)`.
-3. Theorem 4.3(b): Unconditional zero-gap optimality across ALL exact biclique covers
-   of `M_t` (and `K_t`) for label count `bc = cp = 2^(2t-1)`, degree product
-   `totalRowLoad * totalColLoad ≥ 2^(5t-1)`, and all weighted sums
-   `α * totalRowLoad + β * totalColLoad ≥ min_m (α * 2^(t-1-m) + β * 2^m) * 2^(2t)`.
-4. Theorem 4.3(c): Exact local biclique cover and partition numbers
-   `lbc(K_t) = lbp(K_t) = lbc(M_t) = lbp(M_t) = ⌈(2^⌊s/2⌋ + 2^⌈s/2⌉)/2⌉` for all `t ≥ 1`,
-   including the general non-equivariant lift-colored balanced star-blowup partition for all
+2. Definition 2.3 & Theorem 2.4(a): Cyclic carry-cut partition family `𝒫_m` (`mechanismIICStar`)
+   of exact zero-duplicate biclique partitions of `M_t` (and projected core partitions of `C_t`)
+   with `2^(2t-1)` keys, constant row load `2^(t-1-m)`, constant column load `2^m`, and exact
+   biclique sizes `|U_ℓ| = 2^(t-m)` and `|V_ℓ| = 2^(m+1)`.
+3. Theorem 2.4(b): Exact optimality across ALL exact biclique covers of `M_t` (and `C_t`) for
+   label count `bc = cp = 2^(2t-1)`, degree product `totalRowLoad * totalColLoad ≥ 2^(5t-1)`,
+   and all weighted sums `α * totalRowLoad + β * totalColLoad ≥ min_m (α * 2^(t-1-m) + β * 2^m) * 2^(2t)`.
+4. Theorem 3.2: Exact local biclique cover and partition numbers
+   `lbc(C_t) = lbp(C_t) = lbc(M_t) = lbp(M_t) = ⌈(2^⌊s/2⌋ + 2^⌈s/2⌉)/2⌉` for all `t ≥ 1`,
+   including the general non-equivariant lift-colored balanced 4-star blowup partition for all
    odd `s = 2r + 1` (`r ≥ 1`).
-5. Appendix A Proposition A.1: Kernel-verified (`decide`) `s = 3` equivariant grid
-   obstruction certifying `48` maximal `(2,4)/(4,2)` rectangles, exactly `50` disjoint
+5. Proposition 3.3 & Appendix A Proposition A.1: Kernel-verified (`decide`) `s = 3` equivariant
+   grid obstruction certifying `48` maximal `(2,4)/(4,2)` rectangles, exactly `50` disjoint
    tilings of `{0..7}²` (distribution `(5, 12, 16, 12, 5)`), and `0` tilings (hence `0`
-   `𝔽₂³`-equivariant covers of `K_4`) with maximum vertex load `≤ 3`.
+   `𝔽₂³`-equivariant covers of `C_4`) with maximum vertex load `≤ 3`.
 -/
 
 namespace CarryAutomaton
 
 open Finset BigOperators
 
-/-! ### Lemma 4.1: Modular-Quotient Carry Identity, Bit-Parallel Borrow, and Wrap Mask -/
+/-! ### Lemma 2.2: Modular-Quotient Carry Identity, Bit-Parallel Borrow, and Wrap Mask -/
 
 /-- `i`-bit borrow indicator with incoming carry `c_in ∈ {0, 1}`:
 `c_i(w, z; c_in) = 1[(w mod 2^i) + c_in > (z mod 2^i)]` in `ZMod 2`. -/
 def borrowBitCin (i w z c_in : ℕ) : ZMod 2 :=
   if z % 2 ^ i < w % 2 ^ i + c_in then 1 else 0
 
-/-- Generalized Lemma 4.1 (Modular-Quotient Carry Identity with incoming carry `c_in ∈ {0, 1}`):
+/-- Generalized Lemma 2.2 (Modular-Quotient Carry Identity with incoming carry `c_in ∈ {0, 1}`):
 for `0 ≤ m ≤ s`, `h = s - m`, `1 ≤ j ≤ h`, `w, z < 2^s`, `c_in ≤ 1`,
 splitting `w = w_lo + 2^m w_hi`, `z = z_lo + 2^m z_hi`, `c_m = 1[w_lo + c_in > z_lo]`,
 and `q = (z_hi - c_m) mod 2^h`:
@@ -181,7 +182,7 @@ theorem modular_quotient_carry_identity_cin {s m j w z c_in : ℕ}
     · have hn : ¬ (2 ^ m * b + z_lo < 2 ^ m * a + w_lo + c_in) := fun h => hba (hiff.mp h)
       simp only [hba, hn, ↓reduceIte]
 
-/-- Lemma 4.1 (Modular-Quotient Carry Identity, `c_in = 0` specialization from Paper 2). -/
+/-- Lemma 2.2 (Modular-Quotient Carry Identity, `c_in = 0` specialization, Equation (2.7) of Paper 2). -/
 theorem modular_quotient_carry_identity {s m j w z : ℕ}
     (hm : m ≤ s) (hj1 : 1 ≤ j) (hjh : j ≤ s - m)
     (hw : w < 2 ^ s) (hz : z < 2 ^ s) :
@@ -235,7 +236,7 @@ theorem bitParallelBorrow_testBit {k a b j : ℕ}
   cases ba <;> cases bb <;> cases bd <;> cases bc <;> decide
 
 /-- Bit-parallel shifted `h`-bit borrow word `γ = (C_{[0..h]}(w_hi, q) >> 1) mod 2^h`
-from Definition 4.2 eq. (4.2). -/
+from Definition 2.3 (Equation (2.8)). -/
 def aliceBorrowMask (h w_hi q : ℕ) : ℕ :=
   (bitParallelBorrow h w_hi q / 2) % 2 ^ h
 
@@ -254,7 +255,7 @@ theorem aliceBorrowMask_testBit {h w_hi q j : ℕ}
   exact bitParallelBorrow_testBit hw hq (by omega)
 
 /-- Two's-complement trailing-zero wrap mask `ω(z_hi) = ((z_hi & (-z_hi)) - 1) mod 2^h`
-in exact `BitVec h` arithmetic (Definition 4.2, including `z_hi = 0` and `h = 0`). -/
+in exact `BitVec h` arithmetic (Definition 2.3, including `z_hi = 0` and `h = 0`). -/
 def omegaMaskBV (h : ℕ) (z : BitVec h) : BitVec h :=
   (z &&& (-z)) - BitVec.ofNat h 1
 
@@ -426,14 +427,15 @@ theorem omegaMaskNat_testBit (h z : ℕ) (hz : z < 2 ^ h) {j : ℕ} (hj1 : 1 ≤
   change (omegaMaskBV h (BitVec.ofNat h z)).toNat.testBit (j - 1) = _ at h1
   simpa [omegaMaskNat, BitVec.toNat_ofNat, Nat.mod_eq_of_lt hz] using h1
 
-/-! ### Definition 4.2 & Theorem 4.3(a): Mechanism `II-C*` Family -/
+/-! ### Definition 2.3 & Theorem 2.4(a): Cyclic Carry-Cut Partition Family `𝒫_m` (`mechanismIICStar`) -/
 
-/-- Label universe for Mechanism `II-C*` at width `t ≥ 1` and cut `0 ≤ m ≤ t - 1`:
-`{0,1}^m × {0,1}^{m+1} × {0,1}^h × {0,1}^h` with `h = t - 1 - m` (`2^(2t - 1)` keys). -/
+/-- Label universe for the cyclic carry-cut partition `𝒫_m` (`mechanismIICStar`) at width `t ≥ 1`
+and cut `0 ≤ m ≤ t - 1`: `{0,1}^m × {0,1}^{m+1} × {0,1}^h × {0,1}^h` with `h = t - 1 - m`
+(`2^(2t - 1)` keys). -/
 abbrev IICStarLabel (t m : ℕ) : Type :=
   Fin (2 ^ m) × Fin (2 ^ (m + 1)) × Fin (2 ^ (t - 1 - m)) × Fin (2 ^ (t - 1 - m))
 
-/-- Alice's branchless Mechanism `II-C*` label generator (Definition 4.2, eqs. 4.2–4.3). -/
+/-- Alice's branchless cyclic carry-cut label generator (Definition 2.3, Equation (2.8)). -/
 def iicStarAliceKey (t m : ℕ) (r : Fin (2 ^ t) × Fin (2 ^ t))
     (q : Fin (2 ^ (t - 1 - m))) : IICStarLabel t m :=
   let h := t - 1 - m
@@ -447,7 +449,7 @@ def iicStarAliceKey (t m : ℕ) (r : Fin (2 ^ t) × Fin (2 ^ t))
     ⟨x_hi ^^^ gamma, Nat.xor_lt_two_pow (Nat.mod_lt _ (by positivity)) (aliceBorrowMask_lt _ _ _)⟩
   (w_lo, x_lo_m, q, y_tilde)
 
-/-- Bob's branchless Mechanism `II-C*` label generator (Definition 4.2, eq. 4.4). -/
+/-- Bob's branchless cyclic carry-cut label generator (Definition 2.3, Equation (2.9)). -/
 def iicStarBobKey (t m : ℕ) (c : Fin (2 ^ t) × Fin (2 ^ t))
     (w_lo : Fin (2 ^ m)) : IICStarLabel t m :=
   let h := t - 1 - m
@@ -682,8 +684,8 @@ lemma iicStar_key_eq_iff {t m : ℕ} (ht : 1 ≤ t) (hm : m ≤ t - 1)
         rw [Nat.testBit_lt_two_pow (lt_of_lt_of_le h1 (Nat.pow_le_pow_right (by omega) hge)),
             Nat.testBit_lt_two_pow (lt_of_lt_of_le h2 (Nat.pow_le_pow_right (by omega) hge))]
 
-/-- Definition 4.2 & Theorem 4.3(a): Mechanism `II-C*` as an `ExactBicliqueCover (M_rel t)`
-for every `t ≥ 1` and cut `0 ≤ m ≤ t - 1`. -/
+/-- Definition 2.3 & Theorem 2.4(a): Cyclic carry-cut partition `𝒫_m` (`mechanismIICStar`) as an
+`ExactBicliqueCover (M_rel t)` for every `t ≥ 1` and cut `0 ≤ m ≤ t - 1`. -/
 def mechanismIICStar (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1) :
     ExactBicliqueCover (M_rel t) where
   L := IICStarLabel t m
@@ -705,7 +707,7 @@ def mechanismIICStar (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1) :
     · rw [Finset.mem_filter]; exact ⟨Finset.mem_univ _, q, rfl⟩
     · rw [Finset.mem_filter]; exact ⟨Finset.mem_univ _, w_lo, heq.symm⟩
 
-/-- Theorem 4.3(a): Mechanism `II-C*` has exact label count `|L| = 2^(2t - 1)`. -/
+/-- Theorem 2.4(a): `𝒫_m` (`mechanismIICStar`) has exact label count `|L| = 2^(2t - 1)`. -/
 theorem mechanismIICStar_card_L (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1) :
     Fintype.card (mechanismIICStar t m ht hm).L = 2 ^ (2 * t - 1) := by
   change Fintype.card (IICStarLabel t m) = 2 ^ (2 * t - 1)
@@ -713,7 +715,7 @@ theorem mechanismIICStar_card_L (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1) :
   rw [← pow_add, ← pow_add, ← pow_add]
   congr 1; omega
 
-/-- Theorem 4.3(a): Mechanism `II-C*` is a zero-duplicate biclique partition (`IsPartition`). -/
+/-- Theorem 2.4(a): `𝒫_m` (`mechanismIICStar`) is a zero-duplicate biclique partition (`IsPartition`). -/
 theorem mechanismIICStar_isPartition (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1) :
     (mechanismIICStar t m ht hm).IsPartition := by
   intro r c hrc
@@ -735,7 +737,7 @@ theorem mechanismIICStar_isPartition (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 
     have hq_eq : q = q0 := Fin.ext hmatch.2.2
     rw [← hq, hq_eq]
 
-/-- Theorem 4.3(a): Constant row load `|A(u, w)| = 2^(t - 1 - m)` for every row. -/
+/-- Theorem 2.4(a): Constant row load `|A(u, w)| = 2^(t - 1 - m)` for every row. -/
 theorem mechanismIICStar_rowLoad (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1)
     (r : Fin (2 ^ t) × Fin (2 ^ t)) :
     (mechanismIICStar t m ht hm).rowLoad r = 2 ^ (t - 1 - m) := by
@@ -763,7 +765,7 @@ theorem mechanismIICStar_rowLoad (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1)
       exact ⟨Finset.mem_univ _, by rw [Finset.mem_filter]; exact ⟨Finset.mem_univ _, q, rfl⟩⟩
   simpa using hbij
 
-/-- Theorem 4.3(a): Constant column load `|B(v, z)| = 2^m` for every column. -/
+/-- Theorem 2.4(a): Constant column load `|B(v, z)| = 2^m` for every column. -/
 theorem mechanismIICStar_colLoad (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t - 1)
     (c : Fin (2 ^ t) × Fin (2 ^ t)) :
     (mechanismIICStar t m ht hm).colLoad c = 2 ^ m := by
@@ -969,7 +971,7 @@ theorem mechanismIICStar_biclique_cards (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t
     (Finset.sum_eq_sum_iff_of_le (fun ℓ' _ => hV_le ℓ')).mp hsumV
   exact ⟨hUeq ℓ (Finset.mem_univ _), hVeq ℓ (Finset.mem_univ _)⟩
 
-/-! ### Theorem 4.3(b): Unconditional Zero-Gap Universal Optimality across ALL Exact Covers -/
+/-! ### Theorem 2.4(b): Exact Cover Optimality across ALL Exact Covers -/
 
 /-- Any exact biclique cover of a finite relation `R` satisfies `|E(R)| ≤ ∑_ℓ |U_ℓ| * |V_ℓ|`. -/
 lemma exactBicliqueCover_edge_sum_ge {α β : Type*} [Fintype α] [Fintype β]
@@ -1037,8 +1039,8 @@ lemma cauchy_schwarz_area_bound {ι : Type*} [Fintype ι] (u v : ι → ℕ) (A 
   rw [hlhs, hrhs] at hsum
   omega
 
-/-- Theorem 4.3(b): Biclique cover lower bound `bc(M_t) ≥ 2^(2t - 1)` for EVERY exact cover
-(matched with zero gap by the partition `mechanismIICStar`, so `bc(M_t) = cp(M_t) = 2^(2t - 1)`). -/
+/-- Theorem 2.4(b) (Equation (2.10)): Biclique cover lower bound `bc(M_t) ≥ 2^(2t - 1)` for EVERY
+exact cover (matched by the partition `mechanismIICStar`, so `bc(M_t) = cp(M_t) = 2^(2t - 1)`). -/
 theorem bc_M_lower {t : ℕ} (ht : 1 ≤ t) (C : ExactBicliqueCover (M_rel t)) :
     2 ^ (2 * t - 1) ≤ Fintype.card C.L := by
   cases t with
@@ -1058,7 +1060,7 @@ theorem bc_M_lower {t : ℕ} (ht : 1 ≤ t) (C : ExactBicliqueCover (M_rel t)) :
         _ ≤ Fintype.card C.L * 2 ^ (s + 2) := hsum_le
     exact Nat.le_of_mul_le_mul_right hmul (by positivity)
 
-/-- Theorem 4.3(b): Core biclique cover lower bound `bc(K_{s+1}) ≥ 2^(2s)` for EVERY exact cover. -/
+/-- Theorem 2.4(b) (Equation (2.10)): Core biclique cover lower bound `bc(C_{s+1}) ≥ 2^(2s)` for EVERY exact cover. -/
 theorem bc_K_lower (s : ℕ) (C : ExactBicliqueCover (K_coreRel s)) :
     2 ^ (2 * s) ≤ Fintype.card C.L := by
   have hedges : 2 ^ (3 * s) ≤ ∑ ℓ : C.L, (C.U ℓ).card * (C.V ℓ).card := by
@@ -1074,7 +1076,7 @@ theorem bc_K_lower (s : ℕ) (C : ExactBicliqueCover (K_coreRel s)) :
       _ ≤ Fintype.card C.L * 2 ^ s := hsum_le
   exact Nat.le_of_mul_le_mul_right hmul (by positivity)
 
-/-- Theorem 4.3(b): Universal product bound `totalRowLoad * totalColLoad ≥ 2^(5t - 1)`
+/-- Theorem 2.4(b) (Equation (2.11)): Universal product bound `totalRowLoad * totalColLoad ≥ 2^(5t - 1)`
 (equivalently `E|A| * E|B| ≥ 2^(t - 1)`) across ALL exact covers of `M_t`. -/
 theorem prod_load_M_lower {t : ℕ} (ht : 1 ≤ t) (C : ExactBicliqueCover (M_rel t)) :
     2 ^ (5 * t - 1) ≤ C.totalRowLoad * C.totalColLoad := by
@@ -1105,7 +1107,7 @@ theorem mechanismIICStar_prod_load_eq (t m : ℕ) (ht : 1 ≤ t) (hm : m ≤ t -
     _ = 2 ^ (2 * t + 2 * t) * 2 ^ (t - 1 - m + m) := by rw [← pow_add, ← pow_add]
     _ = 2 ^ (5 * t - 1) := by rw [← pow_add]; congr 1; omega
 
-/-- Theorem 4.3(b): Core universal product bound `totalRowLoad * totalColLoad ≥ 2^(5s)`. -/
+/-- Theorem 2.4(b) (Equation (2.11)): Core universal product bound `totalRowLoad * totalColLoad ≥ 2^(5s)`. -/
 theorem prod_load_K_lower (s : ℕ) (C : ExactBicliqueCover (K_coreRel s)) :
     2 ^ (5 * s) ≤ C.totalRowLoad * C.totalColLoad := by
   have hedges : 2 ^ (3 * s) ≤ ∑ ℓ : C.L, (C.U ℓ).card * (C.V ℓ).card := by
@@ -1135,7 +1137,7 @@ lemma exists_minWeightedCut_attained (s α β : ℕ) :
       (fun m => α * 2 ^ (s - m) + β * 2 ^ m) with ⟨m, hm, heq⟩
   exact ⟨m, by have := Finset.mem_range.mp hm; omega, heq.symm⟩
 
-/-- Theorem 4.3(b): Unconditional weighted-sum lower bound across ALL exact covers of `M_t`:
+/-- Theorem 2.4(b) (Equation (2.12)): Unconditional weighted-sum lower bound across ALL exact covers of `M_t`:
 `min_{0 ≤ m ≤ t - 1} (α * 2^(t - 1 - m) + β * 2^m) * 2^(2t) ≤ α * totalRowLoad + β * totalColLoad`. -/
 theorem weighted_sum_M_lower {t : ℕ} (ht : 1 ≤ t) (α β : ℕ)
     (C : ExactBicliqueCover (M_rel t)) :
@@ -1194,7 +1196,7 @@ theorem weighted_sum_M_lower {t : ℕ} (ht : 1 ≤ t) (α β : ℕ)
         _ ≤ 2 ^ (s + 1) * (α * C.totalRowLoad + β * C.totalColLoad) := hsum
     exact Nat.le_of_mul_le_mul_left hre (by positivity)
 
-/-- Theorem 4.3(b): Mechanism `II-C*` attains exact zero-gap equality for EVERY `(α, β)`. -/
+/-- Theorem 2.4(b) (Equation (2.12)): `𝒫_m` (`mechanismIICStar`) attains equality for EVERY `(α, β)`. -/
 theorem weighted_sum_M_attained {t : ℕ} (ht : 1 ≤ t) (α β : ℕ) :
     ∃ (m : ℕ) (hm : m ≤ t - 1),
       α * (mechanismIICStar t m ht hm).totalRowLoad +
@@ -1205,7 +1207,7 @@ theorem weighted_sum_M_attained {t : ℕ} (ht : 1 ≤ t) (α β : ℕ) :
   rw [mechanismIICStar_totalRowLoad, mechanismIICStar_totalColLoad, ← heq]
   ring
 
-/-- Theorem 4.3(b): Unconditional weighted-sum lower bound across ALL exact covers of `K_coreRel s`. -/
+/-- Theorem 2.4(b) (Equation (2.12)): Unconditional weighted-sum lower bound across ALL exact covers of `K_coreRel s`. -/
 theorem weighted_sum_K_lower (s α β : ℕ) (C : ExactBicliqueCover (K_coreRel s)) :
     minWeightedCut s α β * 2 ^ (2 * s) ≤ α * C.totalRowLoad + β * C.totalColLoad := by
   have hterm : ∀ ℓ : C.L,
@@ -1288,7 +1290,7 @@ theorem minWeightedCut_one_one (s : ℕ) :
     simpa [hsub, add_comm] using h
   exact le_antisymm hle hge
 
-/-- Theorem 4.3(b): Exact unweighted label-weight lower bound on `K_coreRel s`:
+/-- Theorem 2.4(b) (Equation (2.13)): Exact unweighted label-weight lower bound on `K_coreRel s`:
 `W_label(C) ≥ (2^⌊s/2⌋ + 2^⌈s/2⌉) * 2^(2s)`. -/
 theorem unweighted_labelWeight_K_lower (s : ℕ) (C : ExactBicliqueCover (K_coreRel s)) :
     (2 ^ (s / 2) + 2 ^ ((s + 1) / 2)) * 2 ^ (2 * s) ≤ C.labelWeight := by
@@ -1296,7 +1298,7 @@ theorem unweighted_labelWeight_K_lower (s : ℕ) (C : ExactBicliqueCover (K_core
   rw [minWeightedCut_one_one, one_mul, one_mul] at h
   exact h
 
-/-- Theorem 4.3(b): Exact unweighted label-weight lower bound on `M_rel t`:
+/-- Theorem 2.4(b) (Equation (2.13)): Exact unweighted label-weight lower bound on `M_rel t`:
 `W_label(C) ≥ (2^⌊(t-1)/2⌋ + 2^⌈(t-1)/2⌉) * 2^(2t)`. -/
 theorem unweighted_labelWeight_M_lower {t : ℕ} (ht : 1 ≤ t) (C : ExactBicliqueCover (M_rel t)) :
     (2 ^ ((t - 1) / 2) + 2 ^ (t / 2)) * 2 ^ (2 * t) ≤ C.labelWeight := by
@@ -1304,9 +1306,9 @@ theorem unweighted_labelWeight_M_lower {t : ℕ} (ht : 1 ≤ t) (C : ExactBicliq
   rw [minWeightedCut_one_one, one_mul, one_mul, show (t - 1 + 1) / 2 = t / 2 by omega] at h
   exact h
 
-/-! ### Theorem 4.3(c): Exact Local Biclique Cover & Partition Numbers `lbc = lbp` for ALL `t ≥ 1` -/
+/-! ### Theorem 3.2: Exact Local Biclique Cover & Partition Numbers `lbc = lbp` for ALL `t ≥ 1` -/
 
-/-- Theorem 4.3(c) (lower bound on `K_t`): every exact cover of `K_coreRel s` with max load `≤ k`
+/-- Theorem 3.2 (lower bound on `C_t`, Equation (3.1)): every exact cover of `K_coreRel s` with max load `≤ k`
 satisfies `⌈(2^⌊s/2⌋ + 2^⌈s/2⌉) / 2⌉ ≤ k`. -/
 theorem local_load_lower_K (s k : ℕ) (C : ExactBicliqueCover (K_coreRel s))
     (hk : C.HasMaxLoadLe k) :
@@ -1337,7 +1339,7 @@ theorem local_load_lower_K (s k : ℕ) (C : ExactBicliqueCover (K_coreRel s))
     Nat.le_of_mul_le_mul_right h2k (by positivity)
   omega
 
-/-- Theorem 4.3(c) (lower bound on `M_t`): every exact cover of `M_rel t` (`t ≥ 1`) with
+/-- Theorem 3.2 (lower bound on `M_t`, Equation (3.1)): every exact cover of `M_rel t` (`t ≥ 1`) with
 max load `≤ k` satisfies `⌈(2^⌊(t-1)/2⌋ + 2^⌈(t-1)/2⌉) / 2⌉ ≤ k`. -/
 theorem local_load_lower_M {t : ℕ} (ht : 1 ≤ t) (k : ℕ) (C : ExactBicliqueCover (M_rel t))
     (hk : C.HasMaxLoadLe k) :
@@ -1675,7 +1677,7 @@ def oddCoreTopBit (r : ℕ) (p : (Fin (2 * r + 1) → ZMod 2) × Fin (2 ^ (2 * r
 def oddCoreTopXor (r : ℕ) (p : (Fin (2 * r + 1) → ZMod 2) × Fin (2 ^ (2 * r + 1))) : ZMod 2 :=
   p.1 (Fin.last (2 * r))
 
-/-- Top carry equation (4.10) decomposing `K_coreRel (2r + 1)` over `K_coreRel (2r)`. -/
+/-- Top carry equation (Equation (3.2) of Paper 2) decomposing `K_coreRel (2r + 1)` over `K_coreRel (2r)`. -/
 lemma K_coreRel_odd_split (r : ℕ)
     (u v : (Fin (2 * r + 1) → ZMod 2) × Fin (2 ^ (2 * r + 1))) :
     K_coreRel (2 * r + 1) u v ↔
@@ -1780,7 +1782,7 @@ lemma K_coreRel_odd_split (r : ℕ)
       simp only [Nat.mod_mod_of_dvd _ hdvd] at hj
       exact hj
 
-/-- Step 1 (Non-equivariant balanced coloring): `f(ℓ_0) = q_0 ⊕ x_r ⊕ w_0 ∈ 𝔽₂` (eq. 4.11). -/
+/-- Step 1 (Non-equivariant balanced coloring): `f(ℓ_0) = q_0 ⊕ x_r ⊕ w_0 ∈ 𝔽₂` (Theorem 3.2, Step 1). -/
 def starColor (r : ℕ) (hr : 1 ≤ r) (ℓ0 : IICStarCoreLabel (2 * r) r) : ZMod 2 :=
   ((ℓ0.2.2.1.val % 2 : ℕ) : ZMod 2) + ℓ0.2.1 ⟨r - 1, by omega⟩ + ((ℓ0.1.val % 2 : ℕ) : ZMod 2)
 
@@ -1843,7 +1845,7 @@ def starBobLoc (r : ℕ)
     (b + dCol, y + dCol * (1 + b))
 
 /-- Step 2 algebraic equivalence: on every matched base block `(u0, v0) ∈ U_{ℓ_0} × V_{ℓ_0}`,
-the local coordinates `(A, X')` and `(B, Y')` transform eq. (4.10) into `X' + Y' = A * (1 + B)`. -/
+the local coordinates `(A, X')` and `(B, Y')` transform Equation (3.2) into `X' + Y' = A * (1 + B)`. -/
 lemma starBlowup_local_iff {r : ℕ} (hr : 1 ≤ r)
     (u v : (Fin (2 * r + 1) → ZMod 2) × Fin (2 ^ (2 * r + 1)))
     (q : Fin (2 ^ (2 * r - r))) (w_lo : Fin (2 ^ r))
@@ -1918,7 +1920,7 @@ lemma starBlowup_local_iff {r : ℕ} (hr : 1 ≤ r)
         (oddCoreLow r v).2.val / 2 ^ r = 0 then (1 : ZMod 2) else 0) = D
     fin_cases a <;> fin_cases b <;> fin_cases x <;> fin_cases y <;> fin_cases D <;> decide
 
-/-- Theorem 4.3(c) (Step 3): General non-equivariant lift-colored balanced 4-star blowup
+/-- Theorem 3.2: General non-equivariant lift-colored balanced 4-star blowup
 partition of `K_coreRel (2r + 1)` for EVERY `r ≥ 1`, with exact vertex load `3 * 2^(r - 1)`
 at every row and every column! -/
 def starBlowupPartition (r : ℕ) (hr : 1 ≤ r) : ExactBicliqueCover (K_coreRel (2 * r + 1)) where
@@ -2303,9 +2305,9 @@ theorem starBlowupPartition_hasMaxLoadLe (r : ℕ) (hr : 1 ≤ r) :
   ⟨fun u => (starBlowupPartition_rowLoad r hr u).le,
    fun v => (starBlowupPartition_colLoad r hr v).le⟩
 
-/-- Theorem 4.3(c) (unified upper bound for ALL `s ≥ 0` on `K_coreRel s`):
+/-- Theorem 3.2 (unified upper bound for ALL `s ≥ 0` on `K_coreRel s`, Equation (3.1)):
 there exists an exact biclique PARTITION of `K_coreRel s` attaining the exact local bound
-`⌈(2^⌊s/2⌋ + 2^⌈s/2⌉) / 2⌉`, proving `lbc(K_t) = lbp(K_t) = ⌈(2^⌊s/2⌋ + 2^⌈s/2⌉) / 2⌉`. -/
+`⌈(2^⌊s/2⌋ + 2^⌈s/2⌉) / 2⌉`, proving `lbc(C_t) = lbp(C_t) = ⌈(2^⌊s/2⌋ + 2^⌈s/2⌉) / 2⌉`. -/
 theorem exists_optimal_local_partition_K (s : ℕ) :
     ∃ C : ExactBicliqueCover (K_coreRel s),
       C.IsPartition ∧ C.HasMaxLoadLe ((2 ^ (s / 2) + 2 ^ ((s + 1) / 2) + 1) / 2) := by
@@ -2345,8 +2347,8 @@ theorem exists_optimal_local_partition_K (s : ℕ) :
         exact ⟨starBlowupPartition r hr, starBlowupPartition_isPartition r hr,
                starBlowupPartition_hasMaxLoadLe r hr⟩
 
-/-- Theorem 4.3(c) (unified upper bound for ALL `t ≥ 1` on `M_rel t`):
-lifting the optimal `K_coreRel (t - 1)` partition via `I_2 ⊗ K_t ⊗ J_2` yields an exact
+/-- Theorem 3.2 (unified upper bound for ALL `t ≥ 1` on `M_rel t`, Equation (3.1)):
+lifting the optimal `K_coreRel (t - 1)` partition via `I_2 ⊗ C_t ⊗ J_2` yields an exact
 biclique PARTITION of `M_rel t` attaining `lbc(M_t) = lbp(M_t) = ⌈(2^⌊(t-1)/2⌋ + 2^⌈(t-1)/2⌉) / 2⌉`. -/
 theorem exists_optimal_local_partition_M {t : ℕ} (ht : 1 ≤ t) :
     ∃ C : ExactBicliqueCover (M_rel t),
@@ -2358,13 +2360,13 @@ theorem exists_optimal_local_partition_M {t : ℕ} (ht : 1 ≤ t) :
     refine ⟨liftCoverKToM s Ck, liftCoverKToM_isPartition s Ck hpart, ?_⟩
     simpa [Nat.add_sub_cancel] using liftCoverKToM_hasMaxLoadLe s _ Ck hload
 
-/-! ### Appendix A, Proposition A.1 & Theorem 4.3(c) Step 4: `s = 3` Equivariant Obstruction
+/-! ### Proposition 3.3 & Appendix A, Proposition A.1: `s = 3` Equivariant Obstruction
 
 We give a 100% kernel-verified (`decide`) formalization of Appendix A,
 Proposition A.1 (all `48` maximal cocycle-valid `(2,4)`/`(4,2)` pairs on `Fin 8 × Fin 8`,
 all `50` disjoint tilings via the canonical least-uncovered-cell exact-cover search, exact
 distribution `[5, 0, 12, 0, 16, 0, 12, 0, 5]`, and universal max vertex load `= 4`), together
-with Theorem 4.3(c) Step 4 proving that no `𝔽₂³`-equivariant exact biclique cover of `K_coreRel 3`
+with Proposition 3.3 proving that no `𝔽₂³`-equivariant exact biclique cover of `K_coreRel 3`
 achieves max vertex load `≤ 3`.
 -/
 
@@ -3557,7 +3559,7 @@ theorem prop_A1_s3_grid_obstruction :
           rw [← hfilt, List.toFinset_card_of_nodup (hnd.filter _)]; rfl
         have := hcol z; omega
 
-/-! #### Theorem 4.3(c) Step 4: No `𝔽₂³`-Equivariant Cover of `K_coreRel 3` Has Max Load `≤ 3` -/
+/-! #### Proposition 3.3: No `𝔽₂³`-Equivariant Cover of `K_coreRel 3` Has Max Load `≤ 3` -/
 
 /-- Diagonal shift action of `g ∈ 𝔽₂^s` on a vertex set `S ⊆ 𝔽₂^s × Fin (2^s)`. -/
 def shiftCoreSet {s : ℕ} (g : Fin s → ZMod 2)
@@ -3637,7 +3639,7 @@ private lemma dyadic_s3_area_ineq {a w z : ℕ} (ha : a ≤ 3) (hw1 : 1 ≤ w) (
     have : z = 1 := by omega
     subst this; constructor <;> omega
 
-/-- Theorem 4.3(c), Step 4: No `𝔽₂³`-equivariant exact biclique cover of `K_coreRel 3`
+/-- Proposition 3.3: No `𝔽₂³`-equivariant exact biclique cover of `K_coreRel 3` (`C_4`)
 achieves maximum vertex load `≤ 3` (whereas our non-equivariant lift-colored star-blowup
 partition `starBlowupPartition 1` achieves exact load `3` at every vertex). -/
 theorem no_equivariant_cover_K4_load_le_3 (C : ExactBicliqueCover (K_coreRel 3))
@@ -3816,7 +3818,7 @@ theorem no_equivariant_cover_K4_load_le_3 (C : ExactBicliqueCover (K_coreRel 3))
           Finset.card_image_le
       _ = C.colLoad (0, z) := rfl
       _ ≤ 3 := hcol (0, z)
-  -- The exact Step 4 inequality chain: `192 ≥ 4 ∑ (|W|+|Z|) ≥ 3 ∑ |W||Z| ≥ 192`.
+  -- The exact Proposition 3.3 inequality chain: `192 ≥ 4 ∑ (|W|+|Z|) ≥ 3 ∑ |W||Z| ≥ 192`.
   have hterm : ∀ q ∈ 𝒢, 3 * (q.1.card * q.2.card) ≤ 4 * (q.1.card + q.2.card) ∧
       (3 * (q.1.card * q.2.card) = 4 * (q.1.card + q.2.card) ↔
         (q.1.card = 2 ∧ q.2.card = 4) ∨ (q.1.card = 4 ∧ q.2.card = 2)) := by

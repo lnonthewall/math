@@ -11,7 +11,8 @@ import Mathlib.Tactic
 /-!
 # Core Factorization and Maximal Biclique Classification (`CarryAutomaton.CoreBicliques`)
 
-Formalization of Section 1 and Theorem 2.1 of the Paper 2 manuscript:
+Formalization of Section 1 and Theorem 2.1 of the Paper 2 manuscript (where the borrow-core
+matrix `C_t` in Paper 2 is formalized as `K_coreRel s` / `K_coreMat R s` with `s = t - 1`):
 1. Biregularity of `M_t`, single-valued exact cover at `t = 1`, and the `2 × 2` triangular
    obstruction ruling out exact single-valued covers for all `t ≥ 2`.
 2. Theorem 2.1(a): Exact Kronecker core factorization `M_t ≅ I_2 ⊗ K_t ⊗ J_2`,

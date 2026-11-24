@@ -11,21 +11,23 @@ import Mathlib.Tactic
 # Focused Extensions for `CarryAutomaton`
 
 Formalization of:
-1. Direct abelian group-circulant invariance of `M_rel` and `K_coreRel`
-   (`M_rel_group_circulant`, `K_coreRel_group_circulant`).
-2. All-field exact ranks of `K_coreMat` and `M_mat`, both for `char F ≠ 2` via the
+1. Direct abelian group-circulant invariance of `M_rel` and `K_coreRel` (Section 4, Equation (4.1):
+   `M_rel_group_circulant`, `K_coreRel_group_circulant`).
+2. All-field exact ranks of `K_coreMat` (`C_t`) and `M_mat`, both for `char F ≠ 2` via the
    integer telescoping inverse of `G_α(T_neg)` (`rank_K_coreMat_char_ne_two`,
-   `rank_M_mat_char_ne_two`) and for `CharP F 2` via involutory `2 × 2` block shears
-   and nilpotent cyclic shifts (`rank_K_coreMat_char_two`, `rank_M_mat_char_two`).
-3. Real-weighted universal lower bound and attainment for `M_rel`
-   (`weighted_sum_M_lower_real`, `weighted_sum_M_attained_real`).
+   `rank_M_mat_char_ne_two`; Theorem 4.1(b), Equations (4.5) and (4.8)) and for `CharP F 2` via
+   involutory `2 × 2` block shears and nilpotent cyclic shifts (`rank_K_coreMat_char_two`,
+   `rank_M_mat_char_two`; Theorem 4.1(b)).
+3. Real-weighted universal lower bound and attainment for `M_rel` (Theorem 2.4(b), Equation (2.12):
+   `weighted_sum_M_lower_real`, `weighted_sum_M_attained_real`).
 4. Exact equality characterizations for `bc(M_t)` and `totalRowLoad * totalColLoad`
-   (`bc_M_eq_iff`, `prod_load_M_eq_iff`).
+   (Theorem 2.4(b), Equations (2.10)–(2.11): `bc_M_eq_iff`, `prod_load_M_eq_iff`).
 5. General reusable combinatorial balanced 4-star blowup lemma
-   (`abstract_balanced_star_blowup`).
+   (Lemma 3.1: `abstract_balanced_star_blowup`).
 6. Embedded `s`-bit Set Disjointness in `K_coreRel s`, linear all-zeros rectangle cover,
-   and explicit signed margin witness (`disj_embedded_in_K_coreRel`,
-   `zero_cover_K_coreRel_card_le_four_s`, `margin_witness_K_coreRel`).
+   and explicit signed margin witness (Proposition 4.2(c), Equation (4.10):
+   `disj_embedded_in_K_coreRel`, `zero_cover_K_coreRel_card_le_eight_s`,
+   `margin_witness_K_coreRel`).
 -/
 
 namespace CarryAutomaton
@@ -2464,7 +2466,7 @@ theorem zeroCoverKCore_card_eq (s : ℕ) :
     omega
 
 /-- Explicit cover of all zero entries of `K_coreRel s` by at most `8 * s` (`0` for `s = 0`,
-`8 * s - 4` for `s ≥ 1`) all-zeros rectangles (`Proposition 5.3(c)`). -/
+`8 * s - 4` for `s ≥ 1`) all-zeros rectangles (Proposition 4.2(c)). -/
 theorem zero_cover_K_coreRel_card_le_eight_s (s : ℕ) :
     ∃ C : ExactBicliqueCover (fun r c => ¬ K_coreRel s r c),
       Fintype.card C.L ≤ 8 * s ∧
@@ -2490,7 +2492,7 @@ def rectIndicatorMat {α β : Type*} [DecidableEq α] [DecidableEq β]
 
 /-- Explicit margin realization `S = J - 2 * ∑_{q} 1_{R_q}` for `K_coreRel s` decomposed into
 `≤ 8 * s + 1` rank-1 `{0, 1}`-rectangles with `ℓ₁` weight `≤ 16 * s + 1` such that
-`K_coreRel s r c → S r c = 1` and `¬ K_coreRel s r c → S r c ≤ -1` (`Proposition 5.3(c)`). -/
+`K_coreRel s r c → S r c = 1` and `¬ K_coreRel s r c → S r c ≤ -1` (Proposition 4.2(c)). -/
 theorem margin_witness_K_coreRel (s : ℕ) :
     ∃ (Q : Type) (_ : Fintype Q) (_ : DecidableEq Q)
       (U : Q → Finset ((Fin s → ZMod 2) × Fin (2 ^ s)))

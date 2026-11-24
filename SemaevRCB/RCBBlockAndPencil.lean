@@ -11,22 +11,24 @@ import Mathlib.Tactic
 @[expose] public section
 
 /-!
-# Levi-Civita Block Form, Kronecker Pencil `Ψ_RCB`, and Completeness (Theorem 1.2)
+# Levi-Civita Block Form, Kronecker Pencil `Ψ_RCB`, and Completeness (Proposition 1.3 & Section 5)
 
-Formalization of the Companion Theorem (Theorem 1.2 / Theorem `thm:companion-A` of Paper 1):
-1. Exact polynomial cross-product identity for `(rcbX, rcbY, rcbZ)` over any `CommRing`.
+Formalization of **Proposition 1.3** and **Section 5** (including **Remark 5.1**) of Paper 1,
+together with discrete Veronese evaluation and curve-point completeness companions:
+1. Exact polynomial cross-product identity for `(rcbX, rcbY, rcbZ)` over any `CommRing`
+   (Equation (5.2)).
 2. `(1,2)`-congruence `T_RCB ≅_{sym12} symEps3` and `GL`-equivalence `T_RCB ≅ I₂ ⊗₁,₂ ε₃` over
-   any field `K` with `char K ≠ 2, 3` and `b ≠ 0`.
+   any field `K` with `char K ≠ 2, 3` and `b ≠ 0` (Proposition 1.3).
 3. Kronecker canonical form `L₁ ⊕ L₁ᵀ ⊕ L₁ ⊕ L₁ᵀ`, constant projective pencil rank `4`,
    double-quotient substitution rank lower bound `≥ 8`, explicit `8`-term rank decomposition,
    flattening formal border-rank lower bound `≥ 6`, and explicit `6`-term polynomial degeneration
-   for the complexified two-slice pencil `Ψ_RCB`.
+   for the complexified two-slice pencil `Ψ_RCB` (Proposition 1.3).
 4. Projective Veronese rank-`6` theorem for `|A| ≥ 7` points on `E_b(K)` via degree-`6` univariate
    polynomial divisibility and parity, and discrete block rank/border-rank preservation (including
    `|C| ≥ 2` preservation for `Ψ_RCB|_{A × B × C}` when `-1` is not a square in `K`).
 5. Bosma–Lenstra base-locus characterization `RCB(P₁, P₂) = 0 ↔ P₁ - P₂ ∈ E_b[2] \ {O}`,
-   unconditional completeness iff `b` is not a cube in `K`, complexified scalar relation exactness,
-   and kernel-verified `ZMod 67` (`b = 1`) subgroup counterexample witness.
+   unconditional completeness iff `b` is not a cube in `K` (Remark 5.1), complexified scalar
+   relation exactness, and kernel-verified `ZMod 67` (`b = 1`) subgroup witness.
 -/
 
 namespace SemaevRCB
@@ -234,13 +236,13 @@ lemma TensorSym12Congruent.hasSym12FormalBorderRankLe_iff {K I I' L L' : Type*} 
   rcases h with ⟨A, Ai, C, Ci, _, hAiA, _, hCiC, rfl⟩
   exact (hasSym12FormalBorderRankLe_mapTensor_iff_of_leftInv hAiA hCiC T r).symm
 
-/-! ## Section 2: Polynomial Cross-Product Identity & Levi-Civita Block Form (Theorem 1.2(1)) -/
+/-! ## Section 2: Polynomial Cross-Product Identity & Levi-Civita Block Form (Proposition 1.3) -/
 
-/-- First quadratic vector `u(P) = (6 X², -2 Y Z, Y² - 3b Z²)` in Theorem 1.2(1). -/
+/-- First quadratic vector `u(P) = (6 X², -2 Y Z, Y² - 3b Z²)` in Proposition 1.3 (Section 5). -/
 def rcbU {K : Type*} [CommRing K] (b : K) (P : Fin 3 → K) : Fin 3 → K :=
   ![6 * P 0 ^ 2, -2 * P 1 * P 2, P 1 ^ 2 - 3 * b * P 2 ^ 2]
 
-/-- Second quadratic vector `v(P) = (Y² + 3b Z², X Y, -3b X Z)` in Theorem 1.2(1). -/
+/-- Second quadratic vector `v(P) = (Y² + 3b Z², X Y, -3b X Z)` in Proposition 1.3 (Section 5). -/
 def rcbV {K : Type*} [CommRing K] (b : K) (P : Fin 3 → K) : Fin 3 → K :=
   ![P 1 ^ 2 + 3 * b * P 2 ^ 2, P 0 * P 1, -3 * b * P 0 * P 2]
 
@@ -248,7 +250,7 @@ def rcbV {K : Type*} [CommRing K] (b : K) (P : Fin 3 → K) : Fin 3 → K :=
 def rcbEval {K : Type*} [CommRing K] (b : K) (P₁ P₂ : Fin 3 → K) : Fin 3 → K :=
   ![rcbX b P₁ P₂, rcbY b P₁ P₂, rcbZ b P₁ P₂]
 
-/-- **Theorem 1.2(1) (Exact polynomial cross-product identity):**
+/-- **Proposition 1.3 (Exact polynomial cross-product identity, Equation (5.2)):**
 Over any commutative ring `K`, `(-X_+, 2Y_+, 2Z_+) = u(P₁) × v(P₂) + u(P₂) × v(P₁)`. -/
 theorem rcb_cross_product_identity {K : Type*} [CommRing K] (b : K) (P₁ P₂ : Fin 3 → K) :
     ![-rcbX b P₁ P₂, 2 * rcbY b P₁ P₂, 2 * rcbZ b P₁ P₂] =
@@ -437,7 +439,7 @@ lemma mapTensor_UV_symEps3_eq_TRCB {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) (b
     fin_cases m <;> fin_cases n <;> simp [rcbUVFromMonomialMat, T_RCB] <;>
       field_simp [h2] <;> ring
 
-/-- **Theorem 1.2(1) (`(1,2)`-congruence `T_RCB ≅_{sym12} symEps3`):**
+/-- **Proposition 1.3 (`(1,2)`-congruence `T_RCB ≅_{sym12} symEps3`):**
 Over any field `K` with `char K ≠ 2, 3` and `b ≠ 0`, `T_RCB K b` is `(1,2)`-congruent to `symEps3 K`. -/
 theorem T_RCB_sym12Congruent_symEps3 {K : Type*} [Field K]
     (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0) {b : K} (hb : b ≠ 0) :
@@ -450,14 +452,14 @@ theorem T_RCB_sym12Congruent_symEps3 {K : Type*} [Field K]
     · rw [← Matrix.transpose_mul, rcbUVFromMonomial_mul_inv h2 h3 hb, Matrix.transpose_one]
   exact hsym.symm
 
-/-- **Theorem 1.1 / 1.2(1) (`GL`-equivalence `T_RCB ≅ I₂ ⊗₁,₂ ε₃`):**
+/-- **Proposition 1.3 & Lemma 2.4(1) (`GL`-equivalence `T_RCB ≅ I₂ ⊗₁,₂ ε₃`):**
 Over any field `K` with `char K ≠ 2, 3` and `b ≠ 0`, `T_RCB K b` is `GL`-equivalent to `I2_eps3 K`. -/
 theorem T_RCB_equiv_I2_eps3 {K : Type*} [Field K]
     (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0) {b : K} (hb : b ≠ 0) :
     TensorEquiv (T_RCB K b) (I2_eps3 K) :=
   (T_RCB_sym12Congruent_symEps3 h2 h3 hb).toTensorEquiv.trans (symEps3_equiv_I2_eps3 K)
 
-/-! ## Section 3: Complexified Two-Slice Pencil `Ψ_RCB` & Kronecker Form (Theorem 1.2(2)) -/
+/-! ## Section 3: Complexified Two-Slice Pencil `Ψ_RCB` & Kronecker Form (Proposition 1.3) -/
 
 /-- Complexified two-slice matrix pencil `Ψ_RCB = (M_X + i M_Y, M_Z) ∈ L⁶ ⊗ L⁶ ⊗ L²`
 over any ring `L` equipped with `imUnit` (`i² = -1`). -/
@@ -744,7 +746,7 @@ theorem Psi_RCB_equiv_kroneckerDouble_mode12 {L : Type*} [Field L]
       _ = 1 := by rw [hBi₂, Matrix.mul_one, hMiM]
   · rw [← hm₂, ← hPsi_skew, mapTensor_mapTensor, Matrix.mul_one]
 
-/-- **Theorem 1.2(2) (Kronecker canonical form of `Ψ_RCB`):**
+/-- **Proposition 1.3 (Kronecker canonical form of `Ψ_RCB`):**
 Over any field `L` with `char L ≠ 2, 3`, `b ≠ 0`, and `imUnit² = -1`,
 `Ψ_RCB` is `GL`-equivalent over `L` to `L₁ ⊕ L₁ᵀ ⊕ L₁ ⊕ L₁ᵀ`. -/
 theorem Psi_RCB_equiv_kroneckerDouble {L : Type*} [Field L]
@@ -869,7 +871,7 @@ theorem kroneckerDoubleL1Pair_pencil_rank_eq_four {L : Type*} [Field L] {s t : L
       rw [h4]
       exact Matrix.rank_submatrix_le M rowSub colSub
 
-/-- **Theorem 1.2(2) (Constant rank `4` of `Ψ_RCB` on `L² \ {(0, 0)}`):**
+/-- **Proposition 1.3 (Constant rank `4` of `Ψ_RCB` on `L² \ {(0, 0)}`):**
 For all `(s, t) ≠ (0, 0)`, `s(M_X + i M_Y) + t M_Z` has matrix rank `4`. -/
 theorem Psi_RCB_pencil_rank_eq_four {L : Type*} [Field L]
     (h2 : (2 : L) ≠ 0) (h3 : (3 : L) ≠ 0) {b imUnit : L} (hb : b ≠ 0) (hi : imUnit ^ 2 = -1)
@@ -1145,7 +1147,7 @@ theorem kroneckerDoubleL1Pair_rank_ge_eight {L : Type*} [Field L] {r : ℕ}
       (fun t => matrix_rank_le_one_of_outer _ _)
   omega
 
-/-- **Theorem 1.2(2) (Rank lower bound `≥ 8` for `Ψ_RCB`):**
+/-- **Proposition 1.3 (Rank lower bound `≥ 8` for `Ψ_RCB`):**
 Over every field `L` with `char L ≠ 2, 3`, `b ≠ 0`, and `imUnit² = -1`,
 every rank decomposition of `Ψ_RCB` has at least `8` terms (`¬ HasTensorRankLe Ψ_RCB 7`). -/
 theorem Psi_RCB_rank_ge_eight {L : Type*} [Field L]
@@ -1174,7 +1176,7 @@ theorem kroneckerDoubleL1Pair_hasTensorRankLe_eight (L : Type*) [CommRing L] :
   fin_cases a <;> fin_cases c <;> fin_cases i <;> fin_cases j <;> fin_cases k <;>
     simp [Fin.sum_univ_eight, terms, kroneckerDoubleL1Pair, kroneckerL1Pair]
 
-/-- **Theorem 1.2(2) (Explicit `8`-term upper bound for `Ψ_RCB`):**
+/-- **Proposition 1.3 (Explicit `8`-term upper bound for `Ψ_RCB`):**
 Over every field `L` with `char L ≠ 2, 3`, `b ≠ 0`, and `imUnit² = -1`, `HasTensorRankLe Ψ_RCB 8`. -/
 theorem Psi_RCB_hasTensorRankLe_eight {L : Type*} [Field L]
     (h2 : (2 : L) ≠ 0) (h3 : (3 : L) ≠ 0) {b imUnit : L} (hb : b ≠ 0) (hi : imUnit ^ 2 = -1) :
@@ -1295,7 +1297,7 @@ theorem kroneckerDoubleL1Pair_hasFormalBorderRankLe_six (L : Type*) [CommRing L]
   · simp [Fin.sum_univ_six, split6, kroneckerDoubleL1Pair]
   · simpa [Fin.sum_univ_six, Fin.sum_univ_three, split6, kroneckerDoubleL1Pair] using h3 i j k
 
-/-- **Theorem 1.2(2) (Explicit `6`-term formal border-rank upper bound for `Ψ_RCB`):**
+/-- **Proposition 1.3 (Explicit `6`-term formal border-rank upper bound for `Ψ_RCB`):**
 Over every field `L` with `char L ≠ 2, 3`, `b ≠ 0`, and `imUnit² = -1`,
 `HasFormalBorderRankLe Ψ_RCB 6`. -/
 theorem Psi_RCB_hasFormalBorderRankLe_six {L : Type*} [Field L]
@@ -1355,7 +1357,7 @@ lemma irreducible_X_sq_add_one {K : Type*} [Field K] (hnsq : ¬ IsSquare (-1 : K
           Polynomial.eval_one] at hp_root
         exact hnsq ⟨r, by linear_combination -hp_root⟩
 
-/-- Specialization of Theorem 1.2(2) to `K(i) = AdjoinRoot (X² + 1)` and `AlgebraicClosure K`
+/-- Specialization of Proposition 1.3 to `K(i) = AdjoinRoot (X² + 1)` and `AlgebraicClosure K`
 whenever `-1` is not a square in `K`. -/
 theorem Psi_RCB_over_QuadExtNegOne_and_AlgClosure {K : Type*} [Field K]
     (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0) {b : K} (hb : b ≠ 0)
@@ -1421,7 +1423,7 @@ theorem Psi_RCB_over_QuadExtNegOne_and_AlgClosure {K : Type*} [Field K]
     Psi_RCB_hasFormalBorderRankLe_six h2A h3A hbA hiAlg,
     Psi_RCB_not_hasFormalBorderRankLe_five h2A h3A hbA hiAlg⟩
 
-/-! ## Section 4: Discrete Block Preservation & Projective Veronese Rank 6 (Theorem 1.2(3)) -/
+/-! ## Section 4: Discrete Block Preservation & Projective Veronese Rank 6 -/
 
 /-- Gaussian pivot left-inverse construction: any `A × n` matrix over a field `K` with trivial
 right kernel admits an `n × A` left inverse `L * V = 1`. -/
@@ -1743,7 +1745,7 @@ lemma card_affine_zeros_le_natDegree {K : Type*} [Field K] (h2 : (2 : K) ≠ 0)
   rw [hcard_sum, ← hdeg_prod]
   exact Polynomial.natDegree_le_of_dvd hdvd_prod hR
 
-/-- **Theorem 1.2(3) (Projective Veronese rank-`6` / Bézout quadratic vanishing theorem on `E_b`):**
+/-- **Projective Veronese rank-`6` / Bézout quadratic vanishing theorem on `E_b`:**
 If `|A| ≥ 7` and `rep : A → K³` represents pairwise projectively distinct points of `E_b(K)`,
 any quadratic form `∑ m, c m * veronese2 (rep a) m = 0` vanishing on all `a : A` is identically `0`. -/
 theorem veronese2_vanishing_eq_zero_of_card_ge_seven {K A : Type*} [Field K]
@@ -1905,7 +1907,7 @@ def T_RCB_restricted {K A B : Type*} [CommRing K] (b : K)
   mapTensor (veroneseEvalMat repA) (veroneseEvalMat repB) (1 : Matrix (Fin 3) (Fin 3) K)
     (T_RCB K b)
 
-/-- **Theorem 1.2(3) (Discrete block preservation for `T_RCB|_{A × B}` and `T_RCB|_{A × A}`):**
+/-- **Discrete block preservation for `T_RCB|_{A × B}` and `T_RCB|_{A × A}`:**
 Whenever `|A|, |B| ≥ 7` on `E_b(K)`, `T_RCB|_{A × B}` preserves exact tensor rank and formal border
 rank (and for `A = B` with shared representatives, `(1,2)`-symmetric rank and formal border rank). -/
 theorem T_RCB_restricted_preserves_ranks {K A B : Type*} [Field K]
@@ -1946,7 +1948,7 @@ def Psi_RCB_restricted {K L A B C : Type*} [CommRing K] [CommRing L]
   mapTensor ((veroneseEvalMat repA).map φ) ((veroneseEvalMat repB).map φ)
     (psiMode3Mat φ imUnit repC) (Psi_RCB L (φ b) imUnit)
 
-/-- **Theorem 1.2(3) (`|C| ≥ 2` discrete preservation for `Ψ_RCB|_{A × B × C}`):**
+/-- **`|C| ≥ 2` discrete preservation for `Ψ_RCB|_{A × B × C}`:**
 When `-1` is not a square in `K`, over any field extension `φ : K →+* L` containing `imUnit`
 with `imUnit² = -1` (including `K(i)` and `AlgebraicClosure K`), `Ψ_RCB|_{A × B × C}` preserves
 exact tensor rank `8` and formal border rank `6` for every `|A|, |B| ≥ 7` and `|C| ≥ 2`. -/
@@ -2064,7 +2066,7 @@ theorem Psi_RCB_restricted_preserves_ranks {K L A B C : Type*} [Field K] [Field 
     (hbrk 6).mpr (Psi_RCB_hasFormalBorderRankLe_six h2L h3L hbL hi),
     fun h5 => Psi_RCB_not_hasFormalBorderRankLe_five h2L h3L hbL hi ((hbrk 5).mp h5)⟩
 
-/-! ## Section 5: Bosma–Lenstra Base Locus, Completeness, and `ZMod 67` Witness (Theorem 1.2(4)) -/
+/-! ## Section 5: Bosma–Lenstra Base Locus, Completeness, and `ZMod 67` Witness (Remark 5.1) -/
 
 /-- Normalized projective point of `E_b(K)`: either `O = [0 : 1 : 0]` (`inf`) or `[x : y : 1]` (`aff`). -/
 inductive EbPoint (K : Type*) [CommRing K] (b : K)
@@ -2200,7 +2202,7 @@ lemma rcbEval_smul {K : Type*} [CommRing K] (b c₁ c₂ : K) (P₁ P₂ : Fin 3
   funext k
   fin_cases k <;> simp [rcbEval, rcbX, rcbY, rcbZ] <;> ring
 
-/-- **Theorem 1.2(4) (Bosma–Lenstra base-locus characterization & group-law correctness):**
+/-- **Remark 5.1 (Bosma–Lenstra base-locus characterization & group-law correctness):**
 Over any field `K` (`char K ≠ 2, 3`, `b ≠ 0`), for all `p₁, p₂ : EbPoint K b`:
 1. `rcbEval b p₁.toProj p₂.toProj = 0 ↔ p₁ - p₂ ∈ E_b(K)[2] \ {O}`.
 2. Whenever `p₁ - p₂ ∉ E_b(K)[2] \ {O}`, `rcbEval b p₁.toProj p₂.toProj` is projectively equal
@@ -2569,7 +2571,7 @@ theorem rcb_bosma_lenstra_proj {K : Type*} [Field K] [DecidableEq K]
     rcases hproj hnot with ⟨c, hc, heq⟩
     exact ⟨c₁ ^ 2 * c₂ ^ 2 * c, mul_ne_zero hc12 hc, by rw [hscale, heq, smul_smul]⟩
 
-/-- **Theorem 1.2(4) (Unconditional completeness criterion on `E_b(K)`):**
+/-- **Remark 5.1 (Unconditional completeness criterion on `E_b(K)`):**
 The projective RCB law has no base-locus zeros on `E_b(K) × E_b(K)` if and only if
 `b` is NOT a cube in `K`. -/
 theorem rcb_unconditionally_complete_iff {K : Type*} [Field K] [DecidableEq K]
@@ -2595,7 +2597,7 @@ theorem rcb_unconditionally_complete_iff {K : Type*} [Field K] [DecidableEq K]
     rcases htor with ⟨r, hr, _⟩
     exact hnocube ⟨-r, by linear_combination hr⟩
 
-/-- **Theorem 1.2(4) (Zero-spuriousness of the complexified scalar relation):**
+/-- **Zero-spuriousness of the complexified scalar relation:**
 When `-1` is not a square in `K` and `p₁ - p₂ ∉ E_b(K)[2] \ {O}`, the single `L`-scalar relation
 `(X_+ + i Y_+) Z₃ - Z_+ (X₃ - i Y₃) = 0` holds if and only if `p₁ + p₂ + p₃ = O`. -/
 theorem rcb_complex_scalar_relation_iff {K L : Type*} [Field K] [DecidableEq K] [Field L]
@@ -2773,7 +2775,7 @@ private lemma zmod67_ebNsmul_table (k : ℕ) (hk1 : 1 ≤ k) (hk41 : k ≤ 41) :
         rw [hidx] at hy₃
         exact ebAdd_chord_of_eq _ _ hne hm hx₃ hy₃ _
 
-/-- **Theorem 1.2(4) (Kernel-verified `ZMod 67`, `b = 1` even-order base-locus witness):**
+/-- **Kernel-verified `ZMod 67`, `b = 1` even-order base-locus witness:**
 In `𝔽₆₇` (`-1` non-square), `G = (4, 20)` on `E₁ : y² = x³ + 1` has exact order `42`, with
 `[21]G = (30, 0) ∈ E₁(𝔽₆₇)[2] \ {O}`, `[22]G = (55, 45)`, `[19]G = (62, 55) = -(G + [22]G)`,
 and `RCB(G, [22]G) = (0, 0, 0)`. -/

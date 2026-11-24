@@ -169,7 +169,7 @@ theorem minors2x3_eval {K : Type*} [Field K] (h2 : (2 : K) ≠ 0)
 /-! ## Section 3: Characteristic-`3` Obstruction and All-Characteristic (`char K ≠ 2`) Dichotomy -/
 
 /-- **Characteristic-`3` obstruction to rank `9`:** Over *every* field `K` with `(2 : K) ≠ 0`,
-if `I₂ ⊗₁,₂ ε₃` has tensor rank at most `9`, then `(3 : K) ≠ 0`. Indeed, up to Equation (3.10)
+if `I₂ ⊗₁,₂ ε₃` has tensor rank at most `9`, then `(3 : K) ≠ 0`. Indeed, up to Equation (3.8)
 (`β₁ × β₂ = (3/2)(β₁ᵀ G_{rr} β₂) w_r` on `w_r⊥`), only `(2 : K) ≠ 0` is used; if `(3 : K) = 0`,
 `β₁ × β₂` vanishes identically on the `2`-dimensional subspace `w_0⊥`, a contradiction. -/
 theorem I2_eps3_rank_nine_imp_char_ne_three {K : Type*} [Field K]

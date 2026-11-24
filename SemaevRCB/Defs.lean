@@ -16,7 +16,7 @@ import Mathlib.Tactic
 # Shared Definitions for `SemaevRCB`
 
 Core definitions of 3-tensors, tensor rank, `(1,2)`-symmetric rank, formal algebraic
-border rank, purely algebraic flattening lower bounds (Remark 2.4(a)), the Levi-Civita
+border rank, purely algebraic flattening lower bounds (Remark 2.3(a)), the Levi-Civita
 tensor `ε₃`, its mode-shared double `I₂ ⊗₁,₂ ε₃`, and the Renes–Costello–Batina (RCB)
 projective addition tensor `T_RCB` on `j = 0` elliptic curves `E_b : Y²Z = X³ + b Z³`.
 -/
@@ -451,7 +451,7 @@ lemma matrix_card_le_sum_rank {F M₁ M₂ Q : Type*} [Field F]
       _ = κ * r := by simp [mul_comm]
   exact le_trans h1 (le_trans h2 (le_trans h3 h4))
 
-/-- **Remark 2.4(a) (Purely algebraic flattening lower bound for formal border rank):**
+/-- **Remark 2.3(a) (Purely algebraic flattening lower bound for formal border rank):**
 If a `K`-linear flattening `Φ` satisfies `rank (Φ_{K(ε)}(u ⊗ v ⊗ w)) ≤ κ` on every pure tensor
 over `RatFunc K`, and `Φ_K(T)` has a nonsingular `Q × Q` submatrix over `K`, then every formal
 border-rank-`r` degeneration of `T` over `K` satisfies `|Q| ≤ κ * r`. This holds over arbitrary
@@ -573,7 +573,7 @@ def symEps3 (K : Type*) [CommRing K] :
     else 0
 
 /-- Renes–Costello–Batina projective addition formulas `(X_+, Y_+, Z_+)` on
-`E_b : Y²Z = X³ + b Z³` (Equation (2.3) of Paper 1). -/
+`E_b : Y²Z = X³ + b Z³` (Equation (5.1) of Paper 1). -/
 def rcbX {K : Type*} [CommRing K] (b : K) (P₁ P₂ : Fin 3 → K) : K :=
   let t1 := P₁ 1 * P₂ 1
   let t2 := P₁ 2 * P₂ 2

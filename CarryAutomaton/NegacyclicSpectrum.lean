@@ -12,29 +12,32 @@ import Mathlib.Tactic
 @[expose] public section
 
 /-!
-# Negacyclic Walsh–Hadamard Spectrum, Exact Ranks, and Spectral Barrier
+# Negacyclic Walsh–Hadamard Spectrum, Exact Ranks, and Spectral Cover Bounds
 
-Formalization of Section 3 (Theorem 3.1, equations (3.1)–(3.15)) of Paper 2:
-1. Orthonormal Walsh–Hadamard block-diagonalization of the borrow core `K_t` into character
-   matrices `H_α` (`walsh_conj_K_coreMat`).
+Formalization of Section 4 (Theorem 4.1 & Remark 4.3) of Paper 2 (where the borrow core `C_t` is
+formalized as `K_coreRel s` / `K_coreMat R s` with `s = t - 1`):
+1. Orthonormal Walsh–Hadamard block-diagonalization of the borrow core `C_t` (`K_coreMat`) into
+   character matrices `H_α` (`walsh_conj_K_coreMat`; Theorem 4.1(a), Equation (4.3)).
 2. Kronecker factorization `H_α = J_{2^{s-r}} ⊗ H̃_α` and exact diagonal-sign conjugation
-   `D H̃_α D = ∏_{j=0}^{r-1} (I + (-1)^{α_j} T^{2^j})` in the negacyclic shift `T`.
+   `D H̃_α D = ∏_{j=0}^{r-1} (I + (-1)^{α_j} T^{2^j})` in the negacyclic shift `T`
+   (Theorem 4.1(a), Equation (4.4)).
 3. Unitary negacyclic DFT diagonalization of `T` and `G_α(T)`, closed-form positive singular values,
    invertibility of `H̃_α` over `ℚ` and `ℂ`, and exact rational/complex ranks
-   `rank(K_t) = (2 · 4^s + 1) / 3` and `rank(M_t) = (4^t + 2) / 3`.
+   `rank(C_t) = (2 · 4^s + 1) / 3` and `rank(M_t) = (4^t + 2) / 3` (Theorem 4.1(b)–(c),
+   Equation (4.5)).
 4. Sharp trigonometric spectral envelope `‖H_α‖₂ ≤ 2^{s-r} / sin(π / 2^{r+1})`, exact equality
-   characterization `α ∈ {e_r, e_r + e_{r-1}}` for `r ≥ 2`, exact centered spectral gap
-   `Λ(K_t) = 2^{t - 3/2}` (`t ≥ 2`, `Λ(K_1) = 0`), second-tier bound `2^{t-1} / (4 sin(π/8))`,
-   and `Λ(M_t) = 2^t`.
+   characterization `α ∈ {e_r, e_r + e_{r-1}}` for `r ≥ 2`, exact centered spectral norm
+   `Λ(C_t) = 2^{t - 3/2}` (`t ≥ 2`, `Λ(C_1) = 0`), second-tier bound `2^{t-1} / (4 sin(π/8))`,
+   and `Λ(M_t) = 2^t` (Theorem 4.1(c), Equations (4.6)–(4.7)).
 5. Overlap-safe centered spectral biclique-cover lower bound `Λ · W_label ≥ 2(1 - p)|E|` and its
-   exponential separation (`Θ(1)` vs `Θ(2^{s/2})`) on `K_t`.
+   exponential separation (`Θ(1)` vs `Θ(2^{s/2})`) on `C_t` (Remark 4.3).
 -/
 
 namespace CarryAutomaton
 
 open Finset BigOperators Matrix
 
-/-! ### 1. `𝔽₂^s` Characters and Walsh–Hadamard Block Diagonalization (Theorem 3.1(a), Part 1) -/
+/-! ### 1. `𝔽₂^s` Characters and Walsh–Hadamard Block Diagonalization (Theorem 4.1(a), Part 1) -/
 
 /-- Standard `𝔽₂`-inner product `⟨α, β⟩ = ∑_{i < s} α_i β_i` in `ZMod 2`. -/
 def f2Inner (s : ℕ) (α β : Fin s → ZMod 2) : ZMod 2 :=
@@ -236,7 +239,7 @@ theorem H_s_C_mul_self (s : ℕ) : H_s_C s * H_s_C s = 1 := by
   rw [hsq, one_smul]
 
 /-- Character matrix `H_α[w', z'] = (-1)^{⟨α, c(w', z')⟩}` of size `2^s × 2^s` over `R`
-(Paper 2, eq. (3.1)). -/
+(Paper 2, Section 4, eq. (4.3)). -/
 def H_alpha (R : Type*) [CommRing R] (s : ℕ) (α : Fin s → ZMod 2) :
     Matrix (Fin (2 ^ s)) (Fin (2 ^ s)) R :=
   fun w z => (-1 : R) ^ (f2Inner s α (borrowVec s w z)).val
@@ -313,9 +316,9 @@ theorem walsh_conj_K_coreMat_unnorm (R : Type*) [CommRing R] (s : ℕ)
   · ring
   · simp
 
-/-- **Theorem 3.1(a), Part 1 (Orthonormal Walsh–Hadamard Block-Diagonalization over `ℝ`)**:
-`((H_s ⊗ I_{2^s}) K_t (H_s ⊗ I_{2^s}))[(α, w), (β, z)] = H_α[w, z]` if `α = β`, else `0`
-(Paper 2, eq. (3.4)). -/
+/-- **Theorem 4.1(a), Part 1 (Orthonormal Walsh–Hadamard Block-Diagonalization over `ℝ`)**:
+`((H_s ⊗ I_{2^s}) C_t (H_s ⊗ I_{2^s}))[(α, w), (β, z)] = H_α[w, z]` if `α = β`, else `0`
+(Paper 2, eq. (4.3)). -/
 theorem walsh_conj_K_coreMat (s : ℕ) (α β : Fin s → ZMod 2) (w z : Fin (2 ^ s)) :
     ((Matrix.kroneckerMap (· * ·) (H_s s) (1 : Matrix (Fin (2 ^ s)) (Fin (2 ^ s)) ℝ)) *
         K_coreMat ℝ s *
@@ -376,7 +379,7 @@ theorem walsh_conj_K_coreMat_C (s : ℕ) (α β : Fin s → ZMod 2) (w z : Fin (
   · rw [← mul_assoc, hsq, one_mul]
   · simp
 
-/-! ### 2. Factorization and Exact Negacyclic Conjugation (Theorem 3.1(a), Part 2) -/
+/-! ### 2. Factorization and Exact Negacyclic Conjugation (Theorem 4.1(a), Part 2) -/
 
 /-- `n × n` all-ones matrix `J_n`. -/
 def allOnesMat (R : Type*) [One R] (n : ℕ) : Matrix (Fin n) (Fin n) R :=
@@ -391,7 +394,7 @@ def HasHighestBit (s : ℕ) (α : Fin s → ZMod 2) (r : ℕ) : Prop :=
   ∃ (_ : 1 ≤ r) (hrs : r ≤ s),
     α ⟨r - 1, by omega⟩ = 1 ∧ ∀ i : Fin s, r ≤ i.val → α i = 0
 
-/-- `1`-indexed coefficient `α_j` with convention `α_0 = 0` (matching Paper 2, eq. (3.5)). -/
+/-- `1`-indexed coefficient `α_j` with convention `α_0 = 0` (matching Paper 2, eq. (4.4)). -/
 def alphaCoeff (s : ℕ) (α : Fin s → ZMod 2) (j : ℕ) : ZMod 2 :=
   if j = 0 then 0
   else if hj : j - 1 < s then α ⟨j - 1, hj⟩ else 0
@@ -523,8 +526,8 @@ def divModPowTwoEquiv (s r : ℕ) (hrs : r ≤ s) :
     · rw [mul_comm, Nat.mul_add_div hrpos, Nat.div_eq_of_lt w.isLt, add_zero]
     · rw [Nat.mul_add_mod_self_right, Nat.mod_eq_of_lt w.isLt]
 
-/-- **Theorem 3.1(a), Factorization**: `H_α` reindexed by quotient and remainder modulo `2^r`
-equals `J_{2^{s-r}} ⊗ H̃_α`. -/
+/-- **Theorem 4.1(a), Factorization**: `H_α` reindexed by quotient and remainder modulo `2^r`
+equals `J_{2^{s-r}} ⊗ H̃_α` (Paper 2, eq. (4.3)). -/
 theorem H_alpha_reindex_eq_kronecker (R : Type*) [CommRing R] {s r : ℕ} {α : Fin s → ZMod 2}
     (h : HasHighestBit s α r) :
     (H_alpha R s α).reindex (divModPowTwoEquiv s r h.2.1) (divModPowTwoEquiv s r h.2.1) =
@@ -543,7 +546,7 @@ def natBit (n j : ℕ) : ZMod 2 :=
   ((n / 2 ^ j : ℕ) : ZMod 2)
 
 /-- `2^r × 2^r` negacyclic shift matrix `T_neg r` (`T[w, w+1] = 1` for `w < 2^r - 1`,
-`T[2^r - 1, 0] = -1`, else `0`; Paper 2, eq. (3.2)). -/
+`T[2^r - 1, 0] = -1`, else `0`; Paper 2, Section 4, eq. (4.4)). -/
 def T_neg (R : Type*) [Ring R] (r : ℕ) : Matrix (Fin (2 ^ r)) (Fin (2 ^ r)) R :=
   fun w z =>
     if w.val + 1 < 2 ^ r then
@@ -579,13 +582,13 @@ theorem D_sign_diag_mem_pm_one (R : Type*) [CommRing R] (s r : ℕ) (α : Fin s 
   simp only [D_sign, Matrix.diagonal_apply_eq]
   exact neg_one_pow_zmod2_eq_one_or_neg_one _
 
-/-- Factor `I_{2^r} + (-1)^{α_j} T^{2^j}` in `G_α(T)` (Paper 2, eq. (3.5)). -/
+/-- Factor `I_{2^r} + (-1)^{α_j} T^{2^j}` in `G_α(T)` (Paper 2, eq. (4.4)). -/
 def G_alphaFactor (R : Type*) [CommRing R] (s r : ℕ) (α : Fin s → ZMod 2) (j : ℕ) :
     Matrix (Fin (2 ^ r)) (Fin (2 ^ r)) R :=
   1 + ((-1 : R) ^ (alphaCoeff s α j).val) • (T_neg R r) ^ (2 ^ j)
 
 /-- Negacyclic shift polynomial `G_α(T) = ∏_{j=0}^{r-1} (I + (-1)^{α_j} T^{2^j})` (with `α_0 = 0`;
-Paper 2, eq. (3.5)). -/
+Paper 2, eq. (4.4)). -/
 def G_alphaMat (R : Type*) [CommRing R] (s r : ℕ) (α : Fin s → ZMod 2) :
     Matrix (Fin (2 ^ r)) (Fin (2 ^ r)) R :=
   ((List.range r).map (G_alphaFactor R s r α)).prod
@@ -839,10 +842,10 @@ private lemma binary_sub_carry_bit {r j w k z : ℕ} (hjr : j < r)
     rwa [h2] at h1
   simpa only [natBit, borrowBit] using binary_sub_carry_bit_aux (2 ^ j) (by positivity) w k z hmod2
 
-/-- **Theorem 3.1(a), Part 2 (Exact Negacyclic Conjugation over `ℤ` and any `CommRing R`)**:
+/-- **Theorem 4.1(a), Part 2 (Exact Negacyclic Conjugation over `ℤ` and any `CommRing R`)**:
 For `α` with highest nonzero bit `r`,
 `D_sign * Htilde_alpha * D_sign = ∏_{j=0}^{r-1} (I + (-1)^{α_j} T_neg^{2^j})`
-(with `α_0 = 0`; Paper 2, eq. (3.5)). -/
+(with `α_0 = 0`; Paper 2, eq. (4.4)). -/
 theorem D_sign_conj_Htilde_eq_G_alpha (R : Type*) [CommRing R] {s r : ℕ} {α : Fin s → ZMod 2}
     (h : HasHighestBit s α r) :
     D_sign R s r α * Htilde_alpha R s r α * D_sign R s r α = G_alphaMat R s r α := by
@@ -956,7 +959,7 @@ theorem D_sign_conj_Htilde_eq_G_alpha_int {s r : ℕ} {α : Fin s → ZMod 2}
     D_sign ℤ s r α * Htilde_alpha ℤ s r α * D_sign ℤ s r α = G_alphaMat ℤ s r α :=
   D_sign_conj_Htilde_eq_G_alpha ℤ h
 
-/-! ### 3. Negacyclic DFT Diagonalization, Singular Values, and Exact Ranks (Theorem 3.1(b)) -/
+/-! ### 3. Negacyclic DFT Diagonalization, Singular Values, and Exact Ranks (Theorem 4.1(b)–(c)) -/
 
 /-- `2^r` negacyclic roots `ζ_ℓ = exp((2ℓ + 1) π i / 2^r)` (`0 ≤ ℓ < 2^r`). -/
 noncomputable def zetaNeg (r : ℕ) (ℓ : Fin (2 ^ r)) : ℂ :=
@@ -1125,7 +1128,7 @@ theorem T_neg_mul_U_neg (r : ℕ) :
     · intro hmem
       exact absurd (Finset.mem_univ z₀) hmem
 
-/-- **Theorem 3.1(b), Negacyclic Shift Diagonalization**:
+/-- **Theorem 4.1(c), Negacyclic Shift Diagonalization**:
 `U_negᴴ * T_neg * U_neg = diag(ζ_0, ..., ζ_{2^r - 1})`. -/
 theorem U_neg_conj_T_neg (r : ℕ) :
     (U_neg r)ᴴ * T_neg ℂ r * U_neg r = Matrix.diagonal (zetaNeg r) := by
@@ -1170,7 +1173,7 @@ private lemma list_prod_diagonal {n : Type*} [Fintype n] [DecidableEq n] {R : Ty
 noncomputable def lambdaAlpha (s r : ℕ) (α : Fin s → ZMod 2) (ℓ : Fin (2 ^ r)) : ℂ :=
   ∏ j ∈ Finset.range r, (1 + ((-1 : ℂ) ^ (alphaCoeff s α j).val) * (zetaNeg r ℓ) ^ (2 ^ j))
 
-/-- **Theorem 3.1(b), Unitary Diagonalization of `G_α(T)`**:
+/-- **Theorem 4.1(c), Unitary Diagonalization of `G_α(T)`**:
 `U_negᴴ * G_α(T) * U_neg = diag(λ_0, ..., λ_{2^r - 1})`. -/
 theorem U_neg_conj_G_alpha (s r : ℕ) (α : Fin s → ZMod 2) :
     (U_neg r)ᴴ * G_alphaMat ℂ s r α * U_neg r = Matrix.diagonal (lambdaAlpha s r α) := by
@@ -1222,7 +1225,7 @@ theorem factor_lambdaAlpha_ne_zero {s r j : ℕ} (hjr : j < r) (α : Fin s → Z
   have h1_eq_neg1 : (1 : ℂ) = -1 := hpow1.symm.trans hpow_neg1
   norm_num at h1_eq_neg1
 
-/-- **Theorem 3.1(b), Nonvanishing of All Eigenvalues `λ_ℓ`**: `λ_ℓ ≠ 0` for all `ℓ < 2^r`. -/
+/-- **Theorem 4.1(c), Nonvanishing of All Eigenvalues `λ_ℓ`**: `λ_ℓ ≠ 0` for all `ℓ < 2^r`. -/
 theorem lambdaAlpha_ne_zero (s r : ℕ) (α : Fin s → ZMod 2) (ℓ : Fin (2 ^ r)) :
     lambdaAlpha s r α ℓ ≠ 0 := by
   rw [lambdaAlpha]
@@ -1231,7 +1234,7 @@ theorem lambdaAlpha_ne_zero (s r : ℕ) (α : Fin s → ZMod 2) (ℓ : Fin (2 ^ 
   exact factor_lambdaAlpha_ne_zero (Finset.mem_range.mp hj) α ℓ
 
 /-- Closed-form nonzero singular values `σ_ℓ(H_α) = 2^{s - r} ‖λ_ℓ‖ > 0` (`0 ≤ ℓ < 2^r`;
-Paper 2, eq. (3.6)). -/
+Paper 2, Theorem 4.1(c)). -/
 noncomputable def sigmaHAlpha (s r : ℕ) (α : Fin s → ZMod 2) (ℓ : Fin (2 ^ r)) : ℝ :=
   (2 : ℝ) ^ (s - r) * ‖lambdaAlpha s r α ℓ‖
 
@@ -1552,7 +1555,7 @@ theorem rank_H_alpha_zero_C (s : ℕ) : (H_alpha ℂ s 0).rank = 1 :=
 theorem rank_H_alpha_zero_Q (s : ℕ) : (H_alpha ℚ s 0).rank = 1 :=
   rank_H_alpha_zero ℚ s
 
-/-- **Theorem 3.1(b), Exact Rank of `H_α` (`α ≠ 0` with highest bit `r`)** over `ℂ` and `ℚ`. -/
+/-- **Theorem 4.1(b), Exact Rank of `H_α` (`α ≠ 0` with highest bit `r`)** over `ℂ` and `ℚ`. -/
 theorem rank_H_alpha_C {s r : ℕ} {α : Fin s → ZMod 2} (h : HasHighestBit s α r) :
     (H_alpha ℂ s α).rank = 2 ^ r := by
   rw [← Matrix.rank_reindex (divModPowTwoEquiv s r h.2.1) (divModPowTwoEquiv s r h.2.1),
@@ -1665,8 +1668,8 @@ private lemma geom_sum_ranks (s : ℕ) :
     rw [hterm, pow_succ 4 s]
     linarith
 
-/-- **Theorem 3.1(b), Exact Rational Rank of `K_t`**:
-`3 * rank_ℚ(K_{s+1}) = 2 * 4^s + 1`, i.e., `rank(K_t) = (2 · 4^s + 1) / 3` (Paper 2, eq. (3.7)). -/
+/-- **Theorem 4.1(b), Exact Rational Rank of `C_t` (`K_coreMat`)**:
+`3 * rank_ℚ(C_{s+1}) = 2 * 4^s + 1`, i.e., `rank(C_t) = (2 · 4^s + 1) / 3` (Paper 2, eq. (4.5)). -/
 theorem rank_K_coreMat_Q (s : ℕ) :
     3 * (K_coreMat ℚ s).rank = 2 * 4 ^ s + 1 := by
   classical
@@ -1977,8 +1980,8 @@ private lemma M_mat_reindex_eq_kronecker (R : Type*) [CommRing R] (s : ℕ) :
       fun h => h1 (hiff.mp h).1
     simp [h1, hm]
 
-/-- **Theorem 3.1(b), Exact Rational Rank of `M_t`**:
-`3 * rank_ℚ(M_{s+1}) = 4^{s+1} + 2`, i.e., `rank(M_t) = (4^t + 2) / 3` (Paper 2, eq. (3.7)). -/
+/-- **Theorem 4.1(b), Exact Rational Rank of `M_t`**:
+`3 * rank_ℚ(M_{s+1}) = 4^{s+1} + 2`, i.e., `rank(M_t) = (4^t + 2) / 3` (Paper 2, eq. (4.5)). -/
 theorem rank_M_mat_Q (s : ℕ) :
     3 * (M_mat ℚ (s + 1)).rank = 4 ^ (s + 1) + 2 := by
   have hrk : (M_mat ℚ (s + 1)).rank = 2 * (K_coreMat ℚ s).rank := by
@@ -2000,7 +2003,7 @@ theorem rank_M_mat_C (s : ℕ) :
   rw [hrk, pow_succ 4 s]
   linarith
 
-/-! ### 4. Sharp Spectral Envelope, Equality Criterion, and Exact Spectral Gap (Theorem 3.1(c)) -/
+/-! ### 4. Sharp Spectral Envelope, Equality Criterion, and Centered Spectral Norm (Theorem 4.1(c)) -/
 
 /-- `‖1 + exp(i θ)‖ = 2 |cos(θ / 2)|`. -/
 theorem norm_one_add_exp_mul_I (θ : ℝ) :
@@ -2367,7 +2370,7 @@ private lemma finset_prod_le_prod {ι : Type*} (S : Finset ι) {f g : ι → ℝ
         ≤ g a * (∏ i ∈ S, f i) := mul_le_mul_of_nonneg_right hfa_le hfS0
       _ ≤ g a * (∏ i ∈ S, g i) := mul_le_mul_of_nonneg_left hS_le (hfa0.trans hfa_le)
 
-/-- **Theorem 3.1(c), Eigenvalue Envelope**:
+/-- **Theorem 4.1(c), Eigenvalue Envelope**:
 `‖λ_ℓ‖ ≤ 1 / sin(π / 2^{r+1})` for all `r ≥ 1`, `α`, and `ℓ < 2^r`. -/
 theorem norm_lambdaAlpha_le {s r : ℕ} (_hr1 : 1 ≤ r) (α : Fin s → ZMod 2) (ℓ : Fin (2 ^ r)) :
     ‖lambdaAlpha s r α ℓ‖ ≤ 1 / Real.sin (Real.pi / (2 : ℝ) ^ (r + 1)) := by
@@ -2828,7 +2831,7 @@ theorem spectralNorm2_H_alpha_zero (s : ℕ) :
       ext w; simp [Matrix.mulVec, dotProduct, allOnesMat, x1]
     rw [hAx, l2Norm_smul, abs_of_pos (by positivity)]
 
-/-- **Theorem 3.1(b–c), Exact Spectral Norm of `H_α` (`α ≠ 0` with highest bit `r`)**:
+/-- **Theorem 4.1(c), Exact Spectral Norm of `H_α` (`α ≠ 0` with highest bit `r`)**:
 `‖H_α‖₂ = max_{0 ≤ ℓ < 2^r} σ_ℓ(H_α)`. -/
 theorem spectralNorm2_H_alpha_eq_sup_sigma {s r : ℕ} {α : Fin s → ZMod 2}
     (h : HasHighestBit s α r) :
@@ -2935,9 +2938,9 @@ theorem spectralNorm2_H_alpha_eq_sup_sigma {s r : ℕ} {α : Fin s → ZMod 2}
       ring
     nlinarith [l2Norm_nonneg (K_mat_r *ᵥ x_wit), mul_nonneg hS_pos.le (l2Norm_nonneg x_wit)]
 
-/-- **Theorem 3.1(c), Sharp Spectral Envelope**:
+/-- **Theorem 4.1(c), Sharp Spectral Envelope**:
 For every `α ≠ 0` with highest nonzero bit `r`,
-`‖H_α‖₂ ≤ 2^{s - r} / sin(π / 2^{r+1})` (Paper 2, eq. (3.8)). -/
+`‖H_α‖₂ ≤ 2^{s - r} / sin(π / 2^{r+1})` (Paper 2, eq. (4.6)). -/
 theorem spectralNorm2_H_alpha_le_envelope {s r : ℕ} {α : Fin s → ZMod 2}
     (h : HasHighestBit s α r) :
     spectralNorm2 (H_alpha ℝ s α) ≤
@@ -2973,7 +2976,7 @@ private lemma sigmaHAlpha_eq_envelope_iff_factors {s r : ℕ} (_hr1 : 1 ≤ r)
     exact (factor_norm_le_and_eq_iff (Finset.mem_range.mp hj) α ℓ).2.mpr
       (hall j (Finset.mem_range.mp hj))
 
-/-- **Theorem 3.1(c), Exact Equality Criterion (`r ≥ 2`)**:
+/-- **Theorem 4.1(c), Exact Equality Criterion (`r ≥ 2`)**:
 For `α` with highest bit `r ≥ 2`,
 `‖H_α‖₂ = 2^{s - r} / sin(π / 2^{r+1}) ↔ α ∈ {e_r, e_r + e_{r-1}}`. -/
 theorem spectralNorm2_H_alpha_eq_envelope_iff {s r : ℕ} {α : Fin s → ZMod 2}
@@ -3127,7 +3130,7 @@ theorem spectralNorm2_H_alpha_eq_envelope_iff {s r : ℕ} {α : Fin s → ZMod 2
             _ ≤ 2 ^ (r - j + 1) := Nat.pow_le_pow_right (by decide) (by omega))
 
 /-- At `r = 1` (`s ≥ 1`, `α = e_1`), BOTH `ℓ = 0` and `ℓ = 1` achieve `σ_ℓ(H_{e_1}) = 2^{s - 1/2}`
-(multiplicity `2`; Paper 2, eq. (3.9)). -/
+(multiplicity `2`; Paper 2, Theorem 4.1(c), eq. (4.7)). -/
 theorem sigmaHAlpha_e1_eq {s : ℕ} (hs : 1 ≤ s) (ℓ : Fin (2 ^ 1)) :
     sigmaHAlpha s 1 (stdUnitVec s 1) ℓ = (2 : ℝ) ^ ((s : ℝ) - 1 / 2) := by
   have heq_env : sigmaHAlpha s 1 (stdUnitVec s 1) ℓ =
@@ -3234,8 +3237,8 @@ private lemma envelope_le_r2 {s r : ℕ} (hr2 : 2 ≤ r) (hrs : r ≤ s) :
     have hprev := ih (by omega) (by omega)
     exact (le_of_lt hstep).trans hprev
 
-/-- **Theorem 3.1(c), Second-Tier Spectral Norm Bound (`s ≥ 2`, i.e., `t ≥ 3`)**:
-For every `α ∉ {0, e_1}`, `‖H_α‖₂ ≤ 2^s / (4 sin(π / 8))` (Paper 2, eq. (3.11)). -/
+/-- **Theorem 4.1(c), Second-Tier Spectral Norm Bound (`s ≥ 2`, i.e., `t ≥ 3`)**:
+For every `α ∉ {0, e_1}`, `‖H_α‖₂ ≤ 2^s / (4 sin(π / 8))` (Paper 2, Section 4, proof of Theorem 4.1(c)). -/
 theorem second_tier_spectralNorm2_H_alpha_le {s : ℕ} (_hs : 2 ≤ s) {α : Fin s → ZMod 2}
     (h0 : α ≠ 0) (he1 : α ≠ stdUnitVec s 1) :
     spectralNorm2 (H_alpha ℝ s α) ≤ (2 : ℝ) ^ s / (4 * Real.sin (Real.pi / 8)) := by
@@ -3341,8 +3344,8 @@ theorem centeredSpectralGap_K_one :
   exact spectralNorm2_eq_of_le_and_witness 0 0 (le_refl 0)
     (fun x => by simp) (Or.inl rfl)
 
-/-- **Theorem 3.1(c), Exact Centered Spectral Gap of `K_t` (`t = s + 1 ≥ 2`, i.e., `s ≥ 1`)**:
-`Λ(K_t) = ‖K_t - 2^{-s} 1 1ᵀ‖₂ = 2^{s - 1/2}` (`= 2^{t - 3/2}`; Paper 2, eq. (3.9)). -/
+/-- **Theorem 4.1(c), Exact Centered Spectral Norm of `C_t` (`t = s + 1 ≥ 2`, i.e., `s ≥ 1`)**:
+`Λ(C_t) = ‖C_t - 2^{-s} 1 1ᵀ‖₂ = 2^{s - 1/2}` (`= 2^{t - 3/2}`; Paper 2, eq. (4.7)). -/
 theorem centeredSpectralGap_K_core {s : ℕ} (hs : 1 ≤ s) :
     spectralNorm2 (centeredMat (K_coreMat ℝ s) (((2 : ℝ) ^ s)⁻¹)) =
       (2 : ℝ) ^ ((s : ℝ) - 1 / 2) := by
@@ -3616,7 +3619,7 @@ theorem centeredSpectralGap_K_core {s : ℕ} (hs : 1 ≤ s) :
       · intro hm; exact absurd (Finset.mem_univ α₁) hm
     nlinarith [l2Norm_nonneg (C_conj *ᵥ x_e1), mul_nonneg hgap_pos.le (l2Norm_nonneg x_e1)]
 
-/-- `Λ(M_t) = 2^t` for all `t = s + 1 ≥ 1` (Paper 2, Theorem 3.1(c)). -/
+/-- `Λ(M_t) = 2^t` for all `t = s + 1 ≥ 1` (Paper 2, Theorem 4.1(c), Table 1). -/
 theorem centeredSpectralGap_M_mat (s : ℕ) :
     spectralNorm2 (centeredMat (M_mat ℝ (s + 1)) (((2 : ℝ) ^ (s + 1))⁻¹)) =
       (2 : ℝ) ^ (s + 1) := by
@@ -3831,7 +3834,7 @@ theorem centeredSpectralGap_M_mat (s : ℕ) :
       · intro hm; exact absurd (Finset.mem_univ b) hm
     rw [hCx, l2Norm_smul, abs_of_pos (by positivity)]
 
-/-! ### 5. Overlap-Safe Centered Spectral Cover Inequality & Exponential Separation (Theorem 3.1(d)) -/
+/-! ### 5. Overlap-Safe Centered Spectral Cover Inequality & Exponential Separation (Remark 4.3) -/
 
 /-- Number of edges `|E(R)|` of a finite binary relation `R : α → β → Prop`. -/
 def relEdgeCount {α β : Type*} [Fintype α] [Fintype β]
@@ -3867,12 +3870,12 @@ lemma relEdgeCount_le_sum_biclique_areas {α β : Type*} [Fintype α] [Decidable
     _ ≤ ∑ ℓ : C.L, (C.U ℓ ×ˢ C.V ℓ).card := Finset.card_biUnion_le
     _ = ∑ ℓ : C.L, (C.U ℓ).card * (C.V ℓ).card := by simp [Finset.card_product]
 
-/-- **Theorem 3.1(d), Part 1 (Overlap-Safe Centered Spectral Cover Inequality)**:
+/-- **Remark 4.3, Part 1 (Overlap-Safe Centered Spectral Cover Inequality)**:
 For ANY `{0, 1}`-relation `R` on `α × β`, ANY `p ≤ 1` (in particular edge density
 `p = |E| / (|α| |β|)`), ANY centered spectral bound `0 ≤ Λ` satisfying
 `∀ x y, |⟨x, (M_R - p 1 1ᵀ) y⟩| ≤ Λ ‖x‖₂ ‖y‖₂`, and ANY (possibly overlapping) exact biclique
 cover `C` of `R`,
-`2 (1 - p) |E| ≤ Λ · C.labelWeight` (Paper 2, eq. (3.14)–(3.15)). -/
+`2 (1 - p) |E| ≤ Λ · C.labelWeight` (Paper 2, Remark 4.3). -/
 theorem centered_spectral_biclique_cover_mul_le {α β : Type*}
     [Fintype α] [DecidableEq α] [Fintype β] [DecidableEq β]
     {R : α → β → Prop} [∀ r c, Decidable (R r c)]
@@ -3972,7 +3975,7 @@ theorem centered_spectral_biclique_cover_mul_le {α β : Type*}
           ExactBicliqueCover.totalColLoad]
 
 /-- Division form `W_label ≥ 2(1 - p)|E| / Λ(M)` with edge density `p = |E| / (|α| |β|)`
-(Paper 2, eq. (3.12)). -/
+(Paper 2, Remark 4.3). -/
 theorem centered_spectral_biclique_cover_div_le {α β : Type*}
     [Fintype α] [DecidableEq α] [Fintype β] [DecidableEq β]
     {R : α → β → Prop} [∀ r c, Decidable (R r c)]
@@ -4017,8 +4020,8 @@ theorem relEdgeCount_K_coreRel (s : ℕ) :
   simp only [Fintype.card_prod, Fintype.card_fun, ZMod.card, Fintype.card_fin]
   ring_nf
 
-/-- **Theorem 3.1(d), Part 2 (Instantiation on `K_t` for `t = s + 1 ≥ 2`)**:
-The centered spectral cover bound on `K_t` (`p = 2^{-s}`, `|E| = 2^{3s}`, `Λ = 2^{s - 1/2}`)
+/-- **Remark 4.3, Part 2 (Instantiation on `C_t` for `t = s + 1 ≥ 2`)**:
+The centered spectral cover bound on `C_t` (`p = 2^{-s}`, `|E| = 2^{3s}`, `Λ = 2^{s - 1/2}`)
 yields `W_label ≥ 2√2 (1 - 2^{-s}) 2^{2s}`! -/
 theorem K_coreRel_spectral_cover_lower_bound {s : ℕ} (hs : 1 ≤ s)
     (C : ExactBicliqueCover (K_coreRel s)) :
@@ -4052,8 +4055,8 @@ theorem K_coreRel_spectral_cover_lower_bound {s : ℕ} (hs : 1 ≤ s)
   rw [← halg, div_le_iff₀ hΛ_pos]
   linarith
 
-/-- Normalized per-vertex spectral degree lower bound on `K_t`:
-`E[|A| + |B|] = W_label / 2^{2s} ≥ 2√2 (1 - 2^{-s})`. -/
+/-- Normalized per-vertex spectral degree lower bound on `C_t`:
+`E[|A| + |B|] = W_label / 2^{2s} ≥ 2√2 (1 - 2^{-s})` (Paper 2, Remark 4.3). -/
 theorem K_coreRel_spectral_avg_degree_lower_bound {s : ℕ} (hs : 1 ≤ s)
     (C : ExactBicliqueCover (K_coreRel s)) :
     2 * Real.sqrt 2 * (1 - ((2 : ℝ) ^ s)⁻¹) ≤ (C.labelWeight : ℝ) / (2 : ℝ) ^ (2 * s) := by
@@ -4061,7 +4064,7 @@ theorem K_coreRel_spectral_avg_degree_lower_bound {s : ℕ} (hs : 1 ≤ s)
   rw [le_div_iff₀ hpos]
   exact K_coreRel_spectral_cover_lower_bound hs C
 
-/-- **Theorem 3.1(d), Exponential Separation (`O(1)` Spectral Bound vs `Θ(2^{s/2})` Cocycle Bound)**:
+/-- **Remark 4.3, Exponential Separation (`O(1)` Spectral Bound vs `Θ(2^{s/2})` Cocycle Bound)**:
 The centered spectral lower bound `2√2 (1 - 2^{-s})` is uniformly bounded above by `2√2 = O(1)`,
 whereas the cocycle bound `2^{⌊s/2⌋} + 2^{⌈s/2⌉}` grows exponentially as `≥ (2^{s/2} / √2)` times
 the spectral bound. -/
