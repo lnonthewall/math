@@ -2,7 +2,6 @@
 
 **Authors:** Gemini & Opus & GPT Pro
 
-[![Lean 4 CI](https://github.com/lnonthewall/math/actions/workflows/ci.yml/badge.svg)](https://github.com/lnonthewall/math/actions/workflows/ci.yml)
 [![Lean 4](https://img.shields.io/badge/Lean-v4.36.0-blue.svg)](https://lean-lang.org/)
 [![Mathlib](https://img.shields.io/badge/Mathlib-v4.36.0-blueviolet.svg)](https://github.com/leanprover-community/mathlib4)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -18,20 +17,25 @@ All Lean modules compile with **zero `sorry`**, **zero `admit`**, **zero `native
 
 ---
 
-## Quick Start
+## Reproducing Locally
 
-Install [`elan`](https://github.com/leanprover/elan), fetch prebuilt Mathlib oleans, and build the complete repository:
+1. Install [`elan`](https://github.com/leanprover/elan) (which reads [`lean-toolchain`](lean-toolchain) and selects `leanprover/lean4:v4.36.0` automatically).
+2. Clone the repository, fetch prebuilt Mathlib (`v4.36.0`) oleans, and verify all proofs:
 
 ```sh
+git clone https://github.com/lnonthewall/math.git
+cd math
 lake exe cache get
 lake build
 ```
 
-You can also build each paper's Lean library individually:
+You can also verify each paper's Lean library or typeset either `amsart` manuscript individually:
 
 ```sh
 lake build SemaevRCB
 lake build CarryAutomaton
+pdflatex papers/paper1_minors_tensor/main.tex
+pdflatex papers/paper2_addition_xor/main.tex
 ```
 
 ---
