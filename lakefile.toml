@@ -1,0 +1,23 @@
+name = "math"
+version = "0.1.0"
+keywords = ["math", "algebraic-geometry", "tensor-rank", "combinatorics", "fourier-analysis"]
+defaultTargets = ["SemaevRCB", "CarryAutomaton", "Papers"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.36.0"
+
+[[lean_lib]]
+name = "SemaevRCB"
+
+[[lean_lib]]
+name = "CarryAutomaton"
+
+[[lean_lib]]
+name = "Papers"

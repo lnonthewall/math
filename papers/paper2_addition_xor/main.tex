@@ -1,0 +1,639 @@
+\documentclass[11pt,reqno]{amsart}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,array,enumitem,graphicx,xcolor}
+\usepackage[hypertexnames=false]{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\DeclareMathOperator{\bc}{bc}
+\DeclareMathOperator{\cp}{cp}
+\DeclareMathOperator{\lbc}{lbc}
+\DeclareMathOperator{\lbp}{lbp}
+\DeclareMathOperator{\rk}{rank}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\disc}{disc}
+\DeclareMathOperator{\maj}{maj}
+
+\newcommand{\FF}{\mathbb{F}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\bv}{\mathbf{c}}
+\newcommand{\zero}{\mathbf{0}}
+\newcommand{\DISJ}{\mathrm{DISJ}}
+
+\numberwithin{equation}{section}
+
+\title[Biclique Partitions and Fourier Spectra of Modular Addition--XOR]{Biclique Partitions, Balanced Local Covers, and Fourier Spectra of the Modular Addition--XOR Relation}
+\author{Gemini \and Opus \and GPT Pro}
+
+\date{November 2026}
+\subjclass[2020]{Primary 05C70, 05C50; Secondary 68Q17, 94A60, 42C10}
+\keywords{Biclique partition, biclique cover, local biclique cover number, depth-2 rectifier network, group-circulant matrix, negacyclic shift, modular addition, Lean 4}
+
+\begin{document}
+
+\begin{abstract}
+For each integer $t \ge 1$ ($s := t - 1$), we study the $2^{2t} \times 2^{2t}$ Boolean relation matrix
+\[
+  M_t\bigl[(u, w), (v, z)\bigr] := \ind\bigl[(u \oplus v) + w \equiv z \pmod{2^t}\bigr]
+\]
+coupling bitwise XOR and addition modulo $2^t$. Under local affine-XOR bijections, $M_t \cong I_2 \otimes C_t \otimes J_2$, where the $2^{2s} \times 2^{2s}$ borrow-core matrix $C_t$ has $4^s$ maximal cocycle-valid projected pairs with shape polynomial $(2X + 2Y)^s$, $8^s$ maximal bicliques, and maximum biclique area $A_{\max}(C_t) = 2^{t-1}$ ($A_{\max}(M_t) = 2^{t+1}$). Using a modular-quotient carry identity, we construct a family of cyclic carry-cut partitions $\mathcal{P}_m$ ($0 \le m \le s$) with $(2t-1)$-bit keys and uniform vertex loads $(2^{s-m}, 2^m)$ establishing $\bc(M_t) = \cp(M_t) = 2^{2t-1}$, $\min \EE[|A|]\EE[|B|] = 2^{t-1}$, and $\min(\alpha\EE[|A|] + \beta\EE[|B|]) = \min_{0 \le m \le s}(\alpha 2^{s-m} + \beta 2^m)$ for all real $\alpha, \beta > 0$, with exact equality criteria. An abstract balanced $4$-star blowup lemma applied to $\mathcal{P}_r$ at odd $s = 2r + 1 \ge 3$ proves $\lbc(C_t) = \lbp(C_t) = \lbc(M_t) = \lbp(M_t) = \lceil(2^{\lfloor s/2 \rfloor} + 2^{\lceil s/2 \rceil})/2\rceil$ for all $t \ge 1$, whereas at $s = 3$ no $\FF_2^3$-equivariant cover of $C_4$ achieves maximum load $3$. Finally, viewing $M_t$ as a group-circulant operator on $\FF_2^t \times (\ZZ/2^t\ZZ)$ and factoring borrow-character blocks into negacyclic shift polynomials yields $\rk_F(C_t) = (2\cdot 4^s + 1)/3$ ($\operatorname{char} F \neq 2$) versus $\binom{2^s + 1}{2} = (4^s + 2^s)/2$ ($\operatorname{char} F = 2$), closed-form singular values, centered spectral norm $\Lambda(C_t) = 2^{t-3/2}$ ($t \ge 2$), $\gamma_2(C_t) = 2^{-2s}\|C_t\|_*$, and $\DISJ_s$, discrepancy, and margin corollaries, all verified in Lean~4.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction and Main Results}
+\label{sec:intro}
+
+\subsection{Problem Formulation and Exact Label-Intersection Model}
+Interleaving addition modulo $2^t$ with bitwise XOR ($\oplus$) is a basic source of arithmetic carry interaction in combinatorics, communication complexity, and Addition--Rotate--XOR (ARX) primitives~\cite{LM01,Wal03,LWD04,MVDP10}. When two parties---Alice holding $(u, w) \in (\ZZ/2^t\ZZ)^2$ and Bob holding $(v, z) \in (\ZZ/2^t\ZZ)^2$---test the coupled modular congruence
+\begin{equation}
+  \label{eq:arx-cong}
+  (u \oplus v) + w \;\equiv\; z \pmod{2^t},
+\end{equation}
+the resulting bipartite relation is encoded by the $2^{2t} \times 2^{2t}$ Boolean biadjacency matrix
+\begin{equation}
+  \label{eq:Mt-def}
+  M_t \in \{0, 1\}^{2^{2t} \times 2^{2t}}, \qquad M_t\bigl[(u, w), (v, z)\bigr] := \ind\bigl[(u \oplus v) + w \equiv z \pmod{2^t}\bigr] \qquad (t \ge 1,\; s := t - 1).
+\end{equation}
+For each row $(u, w)$ and each $v \in \ZZ/2^t\ZZ$ there is a unique $z \equiv (u \oplus v) + w \pmod{2^t}$, and for each column $(v, z)$ and each $w \in \ZZ/2^t\ZZ$ there is a unique $u = v \oplus ((z - w) \bmod 2^t)$, so $M_t$ is $2^t$-biregular with $|E(M_t)| = 2^{3t}$ ones.
+
+In an oblivious label-matching protocol, one first asks for single-valued functions $f_A, f_B : (\ZZ/2^t\ZZ)^2 \to \mathcal{L}$ satisfying $M_t[(u,w),(v,z)] = \ind[f_A(u,w) = f_B(v,z)]$, which holds if and only if the support of $M_t$ is a vertex-disjoint union of complete bipartite graphs (bicliques). At $t = 1$,~\eqref{eq:arx-cong} reduces to $u_0 \oplus w_0 = v_0 \oplus z_0$, which admits an exact $1$-bit single-valued representation. For every $t \ge 2$, however, restricting rows and columns to $\{(0, 0), (1, 1)\}$ yields the $2 \times 2$ triangular submatrix
+\begin{equation}
+  \label{eq:obstruction-2x2}
+  \begin{pmatrix} M_t[(0,0),(0,0)] & M_t[(0,0),(1,1)] \\ M_t[(1,1),(0,0)] & M_t[(1,1),(1,1)] \end{pmatrix}
+  = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix},
+\end{equation}
+since $(0 \oplus 0) + 0 = 0$, $(0 \oplus 1) + 0 = 1$, $(1 \oplus 0) + 1 = 2 \not\equiv 0 \pmod{2^t}$, and $(1 \oplus 1) + 1 = 1$. Because no equivalence relation induces $\begin{psmallmatrix} 1 & 1 \\ 0 & 1 \end{psmallmatrix}$, single-valued equality labels are impossible for all $t \ge 2$ within the \emph{exact label-intersection (biclique-cover) model}. We emphasize this model boundary explicitly: data-dependent list-merging algorithms~\cite{NP11} and sieve-in-the-middle techniques~\cite{CNPV13} match relations adaptively across sorted or filtered candidate lists and lie outside the oblivious combinatorial-rectangle model studied here. Likewise, graph biclique covers and partitions of Boolean matrices~\cite{Juk12,Pin14} are distinct from the key-recovery ``biclique cryptanalysis'' technique introduced for block ciphers by Bogdanov, Khovratovich, and Rechberger~\cite{BKR11}.
+
+Within the label-intersection model, a representation consists of maps $A, B : \{0, 1\}^{2t} \to 2^{\mathcal{L}}$ into a finite label set $\mathcal{L}$, where each $\ell \in \mathcal{L}$ defines the combinatorial rectangle $U_\ell \times V_\ell$ with $U_\ell = \{r : \ell \in A(r)\}$ and $V_\ell = \{c : \ell \in B(c)\}$:
+\begin{itemize}[leftmargin=2em]
+  \item $(A, B)$ is an \emph{exact biclique cover} of $M_t$ if $M_t[r, c] = 1 \iff A(r) \cap B(c) \neq \emptyset$; the minimum of $|\mathcal{L}|$ over all exact covers is the \emph{biclique cover number} $\bc(M_t)$;
+  \item $(A, B)$ is a \emph{biclique partition} of $M_t$ if $|A(r) \cap B(c)| = M_t[r, c]$ for all $(r, c)$; the minimum of $|\mathcal{L}|$ over all biclique partitions is the \emph{biclique partition number} $\cp(M_t)$.
+\end{itemize}
+The total number of emitted labels equals the \emph{biclique weight}---equivalently, the edge count of a \emph{strictly layered depth-$2$ rectifier network}~\cite{Juk12,ILNS14,CILS17} (a three-layer directed acyclic graph in which every source-to-sink path has length~$2$):
+\[
+  W_{\mathrm{label}}(A, B) := \sum_{r} |A(r)| + \sum_{c} |B(c)| = \sum_{\ell \in \mathcal{L}} \bigl(|U_\ell| + |V_\ell|\bigr).
+\]
+Worst-case per-vertex incidence is measured by the \emph{local biclique cover number} $\lbc(G)$ and \emph{local biclique partition number} $\lbp(G)$ studied by Pinto~\cite{Pin14}, defined as the minimum integer $k$ such that $G$ admits a biclique cover (respectively, biclique partition) in which every vertex belongs to at most $k$ bicliques:
+\[
+  \lbc(M_t) := \min_{\text{exact }(A,B)} \max\!\Bigl(\max_{r} |A(r)|,\; \max_{c} |B(c)|\Bigr).
+\]
+
+\subsection{Summary of Main Results and Literature Positioning}
+Our results determine the exact biclique cover, biclique partition, local cover, and spectral invariants of $M_t$ and its core factor $C_t$ across three main themes:
+
+\begin{enumerate}[leftmargin=2em,label=\textbf{(\arabic*)}]
+  \item \textbf{Core Factorization, Maximal Bicliques, and Cyclic Carry-Cut Partitions (Section~\ref{sec:core-partitions}):}
+  Passing to local affine-XOR coordinates $(x, w) = (u \oplus w, w)$ and $(y, z) = (v \oplus z, z)$ decomposes $M_t \cong I_2 \otimes C_t \otimes J_2$ (Theorem~\ref{thm:factorization-bicliques}), where the $2^{2s} \times 2^{2s}$ borrow-core matrix $C_t[(x', w'), (y', z')] = \ind[x' \oplus y' = \bv(w', z')]$ isolates the strict borrow vector $c_i(w', z') = \ind[(w' \bmod 2^i) > (z' \bmod 2^i)]$. We prove that $C_t$ has $4^s$ maximal cocycle-valid projected pairs with shape polynomial $(2X + 2Y)^s$, $8^s$ maximal bicliques, and uniform maximal biclique area $A_{\max}(C_t) = 2^{t-1}$ ($A_{\max}(M_t) = 2^{t+1}$). Using a modular-quotient carry identity (Lemma~\ref{lem:mod-quotient}), we construct a family of \emph{cyclic carry-cut partitions} $\mathcal{P}_m$ ($0 \le m \le s$) with $(2t-1)$-bit keys and constant vertex loads $(2^{s-m}, 2^m)$ establishing $\bc(M_t) = \cp(M_t) = 2^{2t-1}$, $\min \EE[|A|]\EE[|B|] = 2^{t-1}$, and $\min(\alpha\EE[|A|] + \beta\EE[|B|]) = \min_{0 \le m \le s}(\alpha 2^{s-m} + \beta 2^m)$ for all real $\alpha, \beta > 0$, together with exact equality characterizations (Theorem~\ref{thm:optimal-covers}). For general bipartite graphs, the elementary density bound $W_{\mathrm{label}}(G) \ge |E(G)|/\kappa(G)$ with $\kappa(G) = \max_{U \times V} \frac{|U||V|}{|U|+|V|}$~\cite{Juk12,ILNS14} can be asymptotically loose: on the $n \times n$ strictly upper-triangular matrix $T_n$, Chistikov, Iv\'an, Lubiw, and Shallit~\cite{CILS17} proved (Theorem~4) that even fractional covers require $\Omega(n \log n)$ weight, matching the classical integral optimum $n(\lfloor \log_2 n \rfloor + 2) - 2^{\lfloor \log_2 n \rfloor + 1}$ (which they attribute to 1965 work), whereas $|E(T_n)|/\kappa(T_n) = \Theta(n)$. On $M_t$, by contrast, $\mathcal{P}_{\lfloor s/2 \rfloor}$ attains $|E(M_t)|/\kappa(M_t)$ with equality.
+
+  \item \textbf{Balanced Star-Blowup Lemma and Local Cover/Partition Coincidence (Section~\ref{sec:local}):}
+  Pinto~\cite{Pin14} showed that in general $\lbp(G)$ can be arbitrarily large on bipartite graphs with $\lbc(G) = 2$, whereas structured families such as complete graphs satisfy $\lbc(K_n) = \lbp(K_n) = \lceil \log_2 n \rceil$. For $M_t$ and $C_t$, we extract a reusable combinatorial result---the \emph{Abstract Balanced $4$-Star Blowup Lemma} (Lemma~\ref{lem:abstract-star-blowup})---and instantiate it on $\mathcal{P}_r$ at odd $s = 2r + 1 \ge 3$ using the non-equivariant rectangle $2$-coloring $f(\ell_0) = q_0 \oplus x_r \oplus w_0$ to prove (Theorem~\ref{thm:local-cover})
+  \[
+    \lbc(C_t) = \lbp(C_t) = \lbc(M_t) = \lbp(M_t) = \left\lceil \frac{2^{\lfloor s/2 \rfloor} + 2^{\lceil s/2 \rceil}}{2} \right\rceil \qquad (\forall\, t \ge 1),
+  \]
+  matching the half-weighted fractional local load $\frac{1}{2}(2^r + 2^{r+1}) = \frac{3}{2}\cdot 2^r = 3 \cdot 2^{r-1}$ of $\frac{1}{2}\mathcal{P}_r + \frac{1}{2}\mathcal{P}_{r+1}$. By contrast, Proposition~\ref{prop:s3-obstruction} (with finite certificate in Appendix~\ref{app:s3-cert}) proves that at $s = 3$, no $\FF_2^3$-equivariant cover of $C_4$---even allowing overlaps---achieves maximum vertex load $\le 3$.
+
+  \item \textbf{Abelian Group-Circulant Fourier Analysis, All-Field Ranks, and Corollaries (Section~\ref{sec:fourier}):}
+  Prior Fourier and automaton analyses of modular addition studied differential probabilities, linear approximations, and $S$-function state machines of $x \boxplus y$~\cite{LM01,Wal03,Wal03b,LWD04,MVDP10}, and Schulte-Geers~\cite{SG13} showed that $x \boxplus y \pmod{2^t}$ is CCZ-equivalent to a quadratic vectorial Boolean function, giving scalar Walsh coefficients of magnitude $0$ or dyadic powers up to $\sqrt{2}$. Here $M_t[(u, w), (v, z)] = \ind[u \oplus v = (z - w) \bmod 2^t]$ is a \emph{group-circulant} operator on the mixed abelian group $G_t = \FF_2^t \times (\ZZ/2^t\ZZ)$, whose unitary mixed Walsh--Fourier characters immediately yield $\rk_{\CC}(C_t) = (2\cdot 4^s + 1)/3$ and $\rk_{\CC}(M_t) = (4^t + 2)/3$. Refining this in borrow coordinates (Theorem~\ref{thm:walsh-spectrum}), each character block conjugates to a negacyclic shift polynomial $G_\alpha(T) = \prod_{j=0}^{r-1}(I + (-1)^{\alpha_j}T^{2^j})$ admitting an explicit integer telescoping adjugate $G_\alpha(T) Q_\alpha(T) = 2^r I_{2^r}$, which proves $\rk_F(C_t) = (2\cdot 4^s + 1)/3$ over \emph{every} field $F$ with $\operatorname{char} F \neq 2$, while a Kronecker unitriangular reduction over $F[Y]/(Y^{2^t} - 1)$ proves $\rk_F(C_t) = \binom{2^s + 1}{2} = (4^s + 2^s)/2$ and $\rk_F(M_t) = 4^s + 2^s$ over every field $F$ with $\operatorname{char} F = 2$. We also establish the sharp singular envelope $\|H_\alpha\|_2 \le 2^{s-r}/\sin(\pi/2^{r+1})$, the second singular value / centered spectral norm $\Lambda(C_t) = 2^{t-3/2}$ ($t \ge 2$), the exact factorization norm $\gamma_2(C_t) = 2^{-2s}\|C_t\|_*$~\cite{LS09}, and an embedded $\DISJ_s$ submatrix~\cite{KN97,Raz92,AA05} alongside a linear-size zero-cover giving $\disc(C_t) = \Theta(1/s)$ and a low-$\gamma_2$ margin realization (Proposition~\ref{prop:corollaries}). Section~\ref{sec:lean} documents the formal verification of these results in Lean~4.
+\end{enumerate}
+
+\subsection{Notation}
+Throughout, $t \ge 1$ is an integer and $s := t - 1 \ge 0$. We identify $\{0, 1\}^k$ with $\{0, 1, \dots, 2^k - 1\}$ via $w = \sum_{i=0}^{k-1} w_i 2^i$, write $w_{[a..b]} := \sum_{i=a}^b w_i 2^{i-a}$ (empty slices equal $0$), and denote by $\langle \alpha, \beta \rangle := \sum_i \alpha_i \beta_i \bmod 2$ the standard inner product on $\FF_2^k$. Matrices $I_n$ and $J_n$ denote the $n \times n$ identity and all-ones matrices, $\|\cdot\|_2$ denotes the spectral ($2 \to 2$ operator) norm, $\|\cdot\|_*$ denotes the nuclear norm (sum of singular values), and $\mathcal{C}_8$ denotes the $8$-cycle graph. Expectations $\EE[|A|]$ and $\EE[|B|]$ are taken over uniform rows and uniform columns, respectively.
+
+\section{Core Factorization, Maximal Bicliques, and Cyclic Carry-Cut Partitions}
+\label{sec:core-partitions}
+
+\subsection{Kronecker Core Factorization and \texorpdfstring{$4^s$}{4\^s} Maximal Cocycle Pairs}
+For $1 \le i \le s$, define the $i$-bit strict borrow indicator on $w', z' \in \{0, \dots, 2^s - 1\}$ by
+\begin{equation}
+  \label{eq:borrow-def}
+  c_i(w', z') := \ind\bigl[(w' \bmod 2^i) > (z' \bmod 2^i)\bigr], \qquad \bv(w', z') := \bigl(c_1(w', z'), \dots, c_s(w', z')\bigr) \in \FF_2^s.
+\end{equation}
+
+\begin{theorem}[Core Factorization, Anchor-Compatible Lifting, and $4^s$ Maximal Cocycle Pairs]
+  \label{thm:factorization-bicliques}
+  Let $t \ge 1$ and $s := t - 1$.
+  \begin{enumerate}[leftmargin=2em,label=\textup{(\alph*)}]
+    \item \textbf{Kronecker factorization:} Under the local bijections $(u, w) \mapsto (x, w) := (u \oplus w, w)$ and $(v, z) \mapsto (y, z) := (v \oplus z, z)$ on $\{0, 1\}^{2t}$, separating $(x, w) = (x_0;\; (x', w');\; w_{t-1})$ and $(y, z) = (y_0;\; (y', z');\; z_{t-1})$ with $x' = x_{[1..s]} = (x_1, \dots, x_s),\, y' = y_{[1..s]} = (y_1, \dots, y_s) \in \FF_2^s$ and $w' = w_{[0..s-1]},\, z' = z_{[0..s-1]} \in \{0, \dots, 2^s - 1\}$ yields
+    \begin{equation}
+      \label{eq:kronecker-Mt}
+      M_t \;\cong\; I_2 \otimes C_t \otimes J_2, \qquad C_t \in \{0, 1\}^{2^{2s} \times 2^{2s}}, \quad C_t\bigl[(x', w'), (y', z')\bigr] := \ind\bigl[x' \oplus y' = \bv(w', z')\bigr],
+    \end{equation}
+    where $I_2$ acts on $(x_0, y_0)$ and $J_2$ acts on $(w_{t-1}, z_{t-1})$. In particular, $C_t$ is $2^s$-biregular with $|E(C_t)| = 2^{3s}$, $C_1 = (1)$, and $C_2$ is the biadjacency matrix of the $8$-cycle $\mathcal{C}_8$.
+
+    \item \textbf{Anchor-compatible lifting:} Let $U, V \subseteq \FF_2^s \times \{0, \dots, 2^s - 1\}$ be nonempty with projections $W := \pi_{w'}(U)$ and $Z := \pi_{z'}(V)$. Then $U \times V$ is an all-ones rectangle in $C_t$ if and only if all three of the following conditions hold:
+    \begin{enumerate}[leftmargin=2em,label=\textup{(\roman*)}]
+      \item $|U| = |W|$ and $|V| = |Z|$, so $U = \{(x'(w'), w') : w' \in W\}$ and $V = \{(y'(z'), z') : z' \in Z\}$ are graphs of maps $x' : W \to \FF_2^s$ and $y' : Z \to \FF_2^s$;
+      \item $(W, Z)$ satisfies the \emph{$2$-adic cocycle condition}
+      \begin{equation}
+        \label{eq:cocycle}
+        \bv(w_1, z_1) \oplus \bv(w_1, z_2) \oplus \bv(w_2, z_1) \oplus \bv(w_2, z_2) = \zero \qquad (\forall\, w_1, w_2 \in W,\; \forall\, z_1, z_2 \in Z);
+      \end{equation}
+      \item \emph{anchor compatibility} holds at some (equivalently, every) anchor $(w'_*, z'_*) \in W \times Z$:
+      \begin{equation}
+        \label{eq:anchor}
+        x'(w') \oplus y'(z'_*) = \bv(w', z'_*) \quad (\forall\, w' \in W), \qquad
+        x'(w'_*) \oplus y'(z') = \bv(w'_*, z') \quad (\forall\, z' \in Z).
+      \end{equation}
+    \end{enumerate}
+    Condition~\textup{(iii)} is irredundant: at $s = 1$, $U = \{(0, 0)\}, V = \{(1, 0)\}$ satisfies~\textup{(i)} and~\textup{(ii)} vacuously while $0 \oplus 1 \neq c_1(0, 0) = 0$. Every cocycle-valid pair $(W, Z)$ admits $2^s$ anchor-compatible lifts indexed by $a = x'(w'_*) \in \FF_2^s$, and an anchor-compatible lift is a maximal biclique of $C_t$ if and only if $(W, Z)$ is inclusion-maximal among cocycle-valid pairs.
+
+    \item \textbf{Classification of maximal cocycle pairs and maximal biclique area:} For every $s \ge 0$, $\{0, \dots, 2^s - 1\}^2$ admits $4^s$ maximal cocycle-valid pairs $(W, Z)$, giving $8^s$ maximal bicliques in $C_t$ and $2 \cdot 8^s = 2^{3t-2}$ maximal bicliques in $M_t$, with shape generating function
+    \begin{equation}
+      \label{eq:shape-gf}
+      \sum_{(W, Z)\text{ maximal}} X^{\log_2 |W|} Y^{\log_2 |Z|} \;=\; (2X + 2Y)^s \;=\; \sum_{a=0}^{s} 2^s \binom{s}{a} X^a Y^{s-a}.
+    \end{equation}
+    Every maximal biclique in $C_t$ has dyadic shape $(2^a, 2^{s-a})$ and area $2^s$, so for all $t \ge 1$,
+    \begin{equation}
+      \label{eq:amax}
+      A_{\max}(C_t) = 2^{t-1}, \qquad A_{\max}(M_t) = 4\,A_{\max}(C_t) = 2^{t+1}.
+    \end{equation}
+  \end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(a)} Set $d := (z - w) \bmod 2^t \in \{0, \dots, 2^t - 1\}$, so $(u \oplus v) + w \equiv z \pmod{2^t} \iff u \oplus v = d$. In the binary addition $d + w \equiv z \pmod{2^t}$ with carries $c_0 = 0, c_1, \dots, c_{t-1} \in \{0, 1\}$, bit $i \in \{0, \dots, t - 1\}$ satisfies $z_i = d_i \oplus w_i \oplus c_i$. Substituting $d_i = u_i \oplus v_i$ gives $(u_i \oplus w_i) \oplus (v_i \oplus z_i) = c_i$, i.e., $x_i \oplus y_i = c_i$. Reducing $d + w \equiv z \pmod{2^t}$ modulo $2^i$ ($1 \le i \le s$) gives $d_{[0..i-1]} + w_{[0..i-1]} = z_{[0..i-1]} + c_i 2^i$, whence $c_i = 1 \iff w_{[0..i-1]} > z_{[0..i-1]}$, matching~\eqref{eq:borrow-def}. At $i = 0$, $c_0 = 0$ forces $x_0 = y_0$ ($I_2$); for $1 \le i \le s$, $x'_i \oplus y'_i = c_i(w', z')$ defines $C_t$; and $(w_{t-1}, z_{t-1})$ does not appear in $c_0, \dots, c_s$ or $x_0, y_0, x', y'$ ($J_2$), proving~\eqref{eq:kronecker-Mt}. At $t = 1$, $C_1 = (1)$; at $t = 2$, ordering rows as $(0,0), (0,1), (1,0), (1,1)$ and columns as $(0,1), (1,0), (1,1), (0,0)$ makes row $i$ adjacent to columns $i$ and $(i - 1) \bmod 4$, tracing $\mathcal{C}_8$.
+
+\medskip
+\noindent\textbf{(b)} If $U \times V$ is all-ones in $C_t$ and $(x'_*, w'_*) \in U$, $(y'_*, z'_*) \in V$, adjacency to $(y'_*, z'_*)$ forces $x' = y'_* \oplus \bv(w', z'_*)$ on $U$ ($|U| = |W|$) and adjacency to $(x'_*, w'_*)$ forces $y' = x'_* \oplus \bv(w'_*, z')$ on $V$ ($|V| = |Z|$), giving~(i) and~(iii); substituting $\bv(w_\mu, z_\nu) = x'(w_\mu) \oplus y'(z_\nu)$ cancels all four terms in~\eqref{eq:cocycle}, giving~(ii). Conversely, if~(i)--(iii) hold at $(w'_*, z'_*) \in W \times Z$, specializing~\eqref{eq:cocycle} to $(w', w'_*, z', z'_*)$ and applying~\eqref{eq:anchor} gives
+\[
+  \bv(w', z') = \bv(w', z'_*) \oplus \bv(w'_*, z') \oplus \bv(w'_*, z'_*)
+  = \bigl(x'(w') \oplus y'(z'_*)\bigr) \oplus \bigl(x'(w'_*) \oplus y'(z')\bigr) \oplus \bigl(x'(w'_*) \oplus y'(z'_*)\bigr)
+  = x'(w') \oplus y'(z')
+\]
+for all $(w', z') \in W \times Z$. Compatible lifts are parametrized bijectively by $a := x'(w'_*) \in \FF_2^s$ via $x'_a(w') = a \oplus \bv(w', z'_*) \oplus \bv(w'_*, z'_*)$ and $y'_a(z') = a \oplus \bv(w'_*, z')$, and proper biclique enlargements correspond bijectively to proper cocycle-valid enlargements of $(W, Z)$.
+
+\medskip
+\noindent\textbf{(c)} We induct on $s \ge 0$. At $s = 0$, $(\{0\}, \{0\})$ is the unique maximal pair of shape $(1, 1)$. Let $s \ge 1$. Because $c_1(w, z) = w_0(1 - z_0)$ has $2 \times 2$ XOR sum $1$ on $\{0, 1\}^2$, no cocycle-valid pair has $W \bmod 2 = Z \bmod 2 = \{0, 1\}$, so either $|W \bmod 2| = 1$ or $|Z \bmod 2| = 1$:
+\begin{itemize}[leftmargin=2em]
+  \item \emph{Case 1 ($W = w_0 + 2\widetilde{W}$ with $\widetilde{W} \subseteq \{0, \dots, 2^{s-1} - 1\}$):}
+  If $w_0 = 0$, then $c_i(2\tilde{w}, 2\tilde{z} + z_0) = c_{i-1}(\tilde{w}, \tilde{z})$ for $2 \le i \le s$, independent of $z_0$, so $(2\widetilde{W}, Z)$ is maximal iff $(\widetilde{W}, \widetilde{Z})$ is maximal for $s - 1$ and $Z = 2\widetilde{Z} \sqcup (2\widetilde{Z} + 1)$. If $w_0 = 1$, set $\theta_-(z) := (z - 1) \bmod 2^s$. Checking $z_0 = 1$, $(z_0 = 0, z \not\equiv 0 \pmod{2^i})$, and $z \equiv 0 \pmod{2^i}$ yields, for all $2 \le i \le s$,
+  \[
+    c_i(2\tilde{w} + 1, z) = c_{i-1}\bigl(\tilde{w}, \lfloor \theta_-(z)/2 \rfloor\bigr) \oplus \ind\bigl[z \equiv 0 \pmod{2^i}\bigr].
+  \]
+  Since $\ind[z \equiv 0 \pmod{2^i}]$ depends only on $z$, it cancels out of~\eqref{eq:cocycle}. As $z \mapsto \lfloor \theta_-(z)/2 \rfloor$ is $2$-to-$1$ with opposite-parity fibers, $(2\widetilde{W} + 1, Z)$ is maximal iff $(\widetilde{W}, \widetilde{Z})$ is maximal for $s - 1$ and $Z = \{z : \lfloor \theta_-(z)/2 \rfloor \in \widetilde{Z}\}$. Both subcases have $(|W|, |Z|) = (|\widetilde{W}|, 2|\widetilde{Z}|)$ and $(|W \bmod 2|, |Z \bmod 2|) = (1, 2)$.
+
+  \item \emph{Case 2 ($Z = z_0 + 2\widetilde{Z}$):}
+  Symmetrically, for $z_0 = 1$, $c_i(2\tilde{w} + w_0, 2\tilde{z} + 1) = c_{i-1}(\tilde{w}, \tilde{z})$; for $z_0 = 0$, $\theta_+(w) := (w + 1) \bmod 2^s$ satisfies $c_i(w, 2\tilde{z}) = c_{i-1}(\lfloor \theta_+(w)/2 \rfloor, \tilde{z}) \oplus \ind[w \equiv 2^i - 1 \pmod{2^i}]$. Both subcases force $W$ to be the full $2$-to-$1$ preimage of a maximal $\widetilde{W}$, with $(|W|, |Z|) = (2|\widetilde{W}|, |\widetilde{Z}|)$ and $(|W \bmod 2|, |Z \bmod 2|) = (2, 1)$.
+\end{itemize}
+Because Case~1 has $(|W \bmod 2|, |Z \bmod 2|) = (1, 2)$ and Case~2 has $(2, 1)$ (while pairs with $(1, 1)$ enlarge properly in both cases), these four bijective families partition all $s$-bit maximal pairs, multiplying the shape polynomial by $2Y + 2X$ and proving~\eqref{eq:shape-gf}. Finally, in $M_t \cong \diag(C_t \otimes J_2, C_t \otimes J_2)$, maximal bicliques have the form $(U \times \{0, 1\}) \times (V \times \{0, 1\})$ inside either diagonal block, giving $2 \cdot 8^s = 2^{3t-2}$ maximal bicliques and~\eqref{eq:amax}.
+\end{proof}
+
+\subsection{Modular-Quotient Carry Identity and Cyclic Carry-Cut Partitions}
+
+\begin{lemma}[Modular-Quotient Carry Identity]
+  \label{lem:mod-quotient}
+  Let $s \ge 1$, $0 \le m \le s$, and $h := s - m$. Write $w' = w_{\mathrm{lo}} + 2^m w_{\mathrm{hi}}$ and $z' = z_{\mathrm{lo}} + 2^m z_{\mathrm{hi}}$ with $0 \le w_{\mathrm{lo}}, z_{\mathrm{lo}} < 2^m$ and $0 \le w_{\mathrm{hi}}, z_{\mathrm{hi}} < 2^h$, set $c_m := \ind[w_{\mathrm{lo}} > z_{\mathrm{lo}}]$, and define $q := (z_{\mathrm{hi}} - c_m) \bmod 2^h \in \{0, \dots, 2^h - 1\}$. Then for every $1 \le j \le h$,
+  \begin{equation}
+    \label{eq:mod-quotient}
+    c_{m+j}(w', z') \;=\; \ind\bigl[(w_{\mathrm{hi}} \bmod 2^j) > (q \bmod 2^j)\bigr] \;\oplus\; \beta_j(z_{\mathrm{hi}}, c_m),
+  \end{equation}
+  where $\beta_j(z_{\mathrm{hi}}, c_m) := \ind\bigl[c_m = 1 \text{ and } z_{\mathrm{hi}} \equiv 0 \pmod{2^j}\bigr]$.
+\end{lemma}
+
+\begin{proof}
+Fix $1 \le j \le h$ and put $a := w_{\mathrm{hi}} \bmod 2^j$ and $b := z_{\mathrm{hi}} \bmod 2^j$, so $w' \bmod 2^{m+j} = 2^m a + w_{\mathrm{lo}}$ and $z' \bmod 2^{m+j} = 2^m b + z_{\mathrm{lo}}$. If $c_m = 0$ ($w_{\mathrm{lo}} \le z_{\mathrm{lo}}$), then $q = z_{\mathrm{hi}}$, $\beta_j = 0$, and both sides of~\eqref{eq:mod-quotient} equal $\ind[a > b]$. If $c_m = 1$ and $b \ge 1$, then $z_{\mathrm{hi}} \ge b \ge 1$, so $q = z_{\mathrm{hi}} - 1$ has $q \bmod 2^j = b - 1$, $\beta_j = 0$, and $2^m a + w_{\mathrm{lo}} > 2^m b + z_{\mathrm{lo}} \iff a \ge b \iff a > b - 1$. If $c_m = 1$ and $b = 0$, then $2^m a + w_{\mathrm{lo}} > z_{\mathrm{lo}}$ holds for all $a \ge 0$ (left-hand side $1$), while $z_{\mathrm{hi}} \equiv 0 \pmod{2^j}$ implies $q \bmod 2^j = 2^j - 1$, so $\ind[a > 2^j - 1] = 0$ and $\beta_j = 1$, giving $0 \oplus 1 = 1$.
+\end{proof}
+
+Splitting $(w, z)$ directly at bit $m$ and guessing $c_m \in \{0, 1\}$ alongside $z_{[m..t-2]}$ produces a $2t$-bit partition of $M_t$ with Bob load $2^m$ and average Alice load $(1 - 2^{-m-1})2^{t-m}$. Lemma~\ref{lem:mod-quotient} eliminates the extra $c_m$ bit completely by absorbing $c_m$ into the cyclic quotient $q$:
+
+\begin{definition}[Cyclic Carry-Cut Partition $\mathcal{P}_m$]
+  \label{def:cyclic-cut}
+  Fix $t \ge 1$, cut $m \in \{0, \dots, s\}$ ($s = t - 1$), and $h := s - m$. Set $x := u \oplus w$, $y := v \oplus z$, $w_{\mathrm{lo}} := w_{[0..m-1]}$, $w_{\mathrm{hi}} := w_{[m..t-2]}$, $z_{\mathrm{lo}} := z_{[0..m-1]}$, and $z_{\mathrm{hi}} := z_{[m..t-2]}$. The \emph{cyclic carry-cut generator} $\mathcal{P}_m = (A_m, B_m)$ into $\mathcal{L}_m := \{0, 1\}^m \times \{0, 1\}^{m+1} \times \{0, 1\}^h \times \{0, 1\}^h \cong \{0, 1\}^{2t-1}$ is defined as follows:
+  \begin{itemize}[leftmargin=2em]
+    \item \textbf{Alice} loops over $q \in \{0, \dots, 2^h - 1\}$, computes the $h$-bit borrow vector
+    \begin{equation}
+      \label{eq:alice-borrow}
+      \gamma := \bv_h(w_{\mathrm{hi}}, q) = \Bigl(\bigl(w_{\mathrm{hi}} \oplus q \oplus ((q - w_{\mathrm{hi}}) \bmod 2^{h+1})\bigr) \gg 1\Bigr) \bmod 2^h,
+    \end{equation}
+    sets $\tilde{y}_{\mathrm{hi}} := x_{[m+1..t-1]} \oplus \gamma \in \{0, 1\}^h$, and emits $\ell = (w_{\mathrm{lo}}, x_{[0..m]}, q, \tilde{y}_{\mathrm{hi}})$.
+    \item \textbf{Bob} precomputes the two's-complement wrap mask $\omega(z_{\mathrm{hi}}) := ((z_{\mathrm{hi}} \land (-z_{\mathrm{hi}})) - 1) \bmod 2^h$ (where $\omega(0) = 2^h - 1$ and $\omega(z_{\mathrm{hi}}) = 2^{v_2(z_{\mathrm{hi}})} - 1$ for $z_{\mathrm{hi}} > 0$), loops over $w_{\mathrm{lo}} \in \{0, \dots, 2^m - 1\}$, computes
+    \begin{equation}
+      \label{eq:bob-borrow}
+      C_{[0..m]} := \bigl(w_{\mathrm{lo}} \oplus z_{\mathrm{lo}} \oplus ((z_{\mathrm{lo}} - w_{\mathrm{lo}}) \bmod 2^{m+1})\bigr) \bmod 2^{m+1},
+    \end{equation}
+    extracts $c_m := (C_{[0..m]} \gg m) \land 1$, sets $x_{[0..m]} := y_{[0..m]} \oplus C_{[0..m]}$, $q := (z_{\mathrm{hi}} - c_m) \bmod 2^h$, and $\tilde{y}_{\mathrm{hi}} := y_{[m+1..t-1]} \oplus c_m \cdot \omega(z_{\mathrm{hi}})$, and emits $\ell = (w_{\mathrm{lo}}, x_{[0..m]}, q, \tilde{y}_{\mathrm{hi}})$.
+  \end{itemize}
+  Omitting $x_0 = y_0$ and $(w_{t-1}, z_{t-1})$ defines the projected partition $\mathcal{P}_m^{\mathrm{core}}$ of $C_t$ into $2^{2s}$ bicliques.
+\end{definition}
+
+\begin{theorem}[Optimal Biclique Covers, Partitions, and Equality Criteria]
+  \label{thm:optimal-covers}
+  Let $t \ge 1$ and $s := t - 1$.
+  \begin{enumerate}[leftmargin=2em,label=\textup{(\alph*)}]
+    \item \textbf{Partition property of $\mathcal{P}_m$:} For every $m \in \{0, \dots, s\}$, $\mathcal{P}_m$ is an exact biclique partition of $M_t$ into $|\mathcal{L}_m| = 2^{2t-1}$ bicliques of shape $(2^{s-m+1}, 2^{m+1})$, with constant vertex loads $|A_m(u, w)| = 2^{s-m}$ and $|B_m(v, z)| = 2^m$ (computable in $O(1)$ word operations per emitted label on a $\Theta(t)$-bit word-RAM).
+
+    \item \textbf{Optimal cover invariants and equality criteria:} Across all exact biclique covers $\mathcal{C} = \{U_\ell \times V_\ell\}_{\ell=1}^L$ of $M_t$ (allowing arbitrary overlaps and non-equivariant rectangles),
+    \begin{align}
+      \bc(M_t) = \cp(M_t) &= 2^{2t - 1}, & \bc(C_t) = \cp(C_t) &= 2^{2t - 2}, \label{eq:bc-cp} \\
+      \min_{\mathcal{C}} \bigl(\EE[|A|] \cdot \EE[|B|]\bigr) &= 2^{t - 1}, \label{eq:prod-opt} \\
+      \min_{\mathcal{C}} \bigl(\alpha\,\EE[|A|] + \beta\,\EE[|B|]\bigr) &= \min_{0 \le m \le s}\bigl(\alpha\,2^{s-m} + \beta\,2^m\bigr) & (\forall\, \alpha, \beta \in \RR_{>0}). \label{eq:weighted-sum}
+    \end{align}
+    In particular, at $\alpha = \beta = 1$, $\mathcal{P}_{\lfloor s/2 \rfloor}$ and $\mathcal{P}_{\lceil s/2 \rceil}$ attain $|E(M_t)|/\kappa(M_t)$ with equality:
+    \begin{equation}
+      \label{eq:unweighted-sum}
+      \min_{\mathcal{C}} \EE\bigl[|A| + |B|\bigr] \;=\; \frac{W_{\mathrm{label}}^*(M_t)}{2^{2t}} \;=\; \frac{W_{\mathrm{label}}^*(C_t)}{2^{2s}} \;=\; 2^{\lfloor s/2 \rfloor} + 2^{\lceil s/2 \rceil}.
+    \end{equation}
+    Moreover, an exact cover $\mathcal{C}$ of $M_t$ satisfies $L = 2^{2t-1}$ if and only if $\mathcal{C}$ is a biclique partition of $M_t$ in which every rectangle has area $2^{t+1}$. After discarding empty labels ($U_\ell \times V_\ell = \emptyset$), equality holds in~\eqref{eq:prod-opt} if and only if $\mathcal{C}$ is a biclique partition into maximal bicliques of a single common shape $(2^{s-m+1}, 2^{m+1})$, and equality holds in~\eqref{eq:weighted-sum} if and only if $\mathcal{C}$ is a biclique partition into maximal bicliques whose shape exponents $m$ all lie in $\arg\min_{0 \le m \le s}(\alpha 2^{s-m} + \beta 2^m)$. For even $t$, applying $\mathcal{P}_{t/2}$ on $x_0 = y_0 = 0$ and $\mathcal{P}_{t/2 - 1}$ on $x_0 = y_0 = 1$ attains~\eqref{eq:unweighted-sum} with symmetric averages $\EE[|A|] = \EE[|B|] = 3 \cdot 2^{t/2 - 2}$ and degree product $\frac{9}{8}\cdot 2^{t-1} > 2^{t-1}$.
+  \end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(a)} For $0 \le a, b < 2^k$ and $d := (b - a) \bmod 2^{k+1}$, the addition $d + a \equiv b \pmod{2^{k+1}}$ satisfies $b_j = d_j \oplus a_j \oplus c_j(a, b)$ for $0 \le j \le k$, so $a \oplus b \oplus d = \sum_{j=0}^k c_j(a, b) 2^j$, verifying~\eqref{eq:alice-borrow} and~\eqref{eq:bob-borrow}; similarly bit $j - 1$ of $\omega(z_{\mathrm{hi}})$ equals $\ind[z_{\mathrm{hi}} \equiv 0 \pmod{2^j}]$ for $1 \le j \le h$. By Lemma~\ref{lem:mod-quotient}, $\ell = (w_{\mathrm{lo}}, x_{[0..m]}, q, \tilde{y}_{\mathrm{hi}}) \in A_m(u, w) \cap B_m(v, z)$ holds if and only if $w_{\mathrm{lo}}$ equals Alice's low slice, $q = (z_{\mathrm{hi}} - c_m) \bmod 2^h$, $x_{[0..m]} \oplus y_{[0..m]} = C_{[0..m]}$, and $x_{m+j} \oplus y_{m+j} = \gamma_j \oplus \beta_j = c_{m+j}(w', z')$ for $1 \le j \le h$, i.e., $M_t[(u, w), (v, z)] = 1$ with a unique matching $(q, w_{\mathrm{lo}})$. Distinct $q$'s and $w_{\mathrm{lo}}$'s produce distinct keys, so $|A_m(u, w)| = 2^{s-m}$, $|B_m(v, z)| = 2^m$, and each key covers $2^{s-m+1} \times 2^{m+1}$ vertices of area $2^{t+1}$, activating all $2^{3t}/2^{t+1} = 2^{2t-1}$ keys.
+
+\medskip
+\noindent\textbf{(b)} Let $\mathcal{C} = \{U_\ell \times V_\ell\}_{\ell=1}^L$ be any exact cover of $M_t$. Then $\sum_{\ell=1}^L |U_\ell||V_\ell| \ge |E(M_t)| = 2^{3t}$, and Theorem~\ref{thm:factorization-bicliques}(c) gives $|U_\ell||V_\ell| \le A_{\max}(M_t) = 2^{t+1}$ for every $\ell$.
+\begin{itemize}[leftmargin=2em]
+  \item \emph{Cover/partition numbers:} $2^{3t} \le \sum_{\ell=1}^L |U_\ell||V_\ell| \le 2^{t+1} L$ gives $L \ge 2^{2t-1}$ (matched by $\mathcal{P}_m$), with equality iff $\sum_\ell |U_\ell||V_\ell| = 2^{3t}$ (zero overlap, i.e., a partition) and $|U_\ell||V_\ell| = 2^{t+1}$ for every $\ell$. Projecting to $C_t$ gives $\bc(C_t) = \cp(C_t) = 2^{2s} = 2^{2t-2}$.
+  \item \emph{Degree product:} By Cauchy--Schwarz and $|U_\ell||V_\ell| \le 2^{t+1}$,
+  \[
+    \Bigl(\sum_{\ell=1}^L |U_\ell|\Bigr)\Bigl(\sum_{\ell=1}^L |V_\ell|\Bigr)
+    \;\ge\; \Bigl(\sum_{\ell=1}^L \sqrt{|U_\ell||V_\ell|}\Bigr)^2
+    \;\ge\; \Bigl(\sum_{\ell=1}^L \frac{|U_\ell||V_\ell|}{2^{(t+1)/2}}\Bigr)^2
+    \;\ge\; \frac{2^{6t}}{2^{t+1}} \;=\; 2^{5t-1}.
+  \]
+  Dividing by $2^{4t}$ yields $\EE[|A|]\EE[|B|] \ge 2^{t-1}$ (matched by every $\mathcal{P}_m$). For nonempty rectangles, equality holds iff $\sum_\ell |U_\ell||V_\ell| = 2^{3t}$ (partition), $|U_\ell||V_\ell| = 2^{t+1}$ for all $\ell$ (maximal bicliques), and $|U_\ell|/|V_\ell|$ is constant across $\ell$ (a single dyadic aspect ratio).
+  \item \emph{Real-weighted sum:} Fix $\alpha, \beta \in \RR_{>0}$. Every nonempty all-ones rectangle $U_\ell \times V_\ell$ of $M_t$ is contained in a maximal biclique of shape $(2^{s-m_\ell+1}, 2^{m_\ell+1})$ for some $0 \le m_\ell \le s$, so $|U_\ell| \le 2^{s-m_\ell+1}$ and $|V_\ell| \le 2^{m_\ell+1}$. Hence
+  \[
+    \alpha|U_\ell| + \beta|V_\ell| \;=\; |U_\ell||V_\ell|\Bigl(\frac{\alpha}{|V_\ell|} + \frac{\beta}{|U_\ell|}\Bigr)
+    \;\ge\; \frac{|U_\ell||V_\ell|}{2^t}\min_{0 \le m \le s}\bigl(\alpha\,2^{s-m} + \beta\,2^m\bigr),
+  \]
+  with strict inequality unless $U_\ell \times V_\ell$ is maximal of shape $(2^{s-m_\ell+1}, 2^{m_\ell+1})$ with $m_\ell \in \arg\min_{0 \le m \le s}(\alpha 2^{s-m} + \beta 2^m)$. Summing over nonempty $\ell$, applying $\sum_\ell |U_\ell||V_\ell| \ge 2^{3t}$, and dividing by $2^{2t}$ proves~\eqref{eq:weighted-sum} and its equality characterization.
+\end{itemize}
+\end{proof}
+
+\section{Abstract Balanced Star-Blowup Lemma and Exact Local Cover Numbers}
+\label{sec:local}
+
+To determine the exact local biclique cover and partition numbers of $C_t$ and $M_t$, we isolate a general combinatorial blowup lemma showing how a $(2d, 2d)$-load-regular biclique partition lifts across $2$-biregular $4$-element fibers to a partition of uniform load $3d$.
+
+\begin{lemma}[Abstract Balanced $4$-Star Blowup Lemma]
+  \label{lem:abstract-star-blowup}
+  Let $R_0 \subseteq U_0 \times V_0$ be a relation on finite sets, let $\mathcal{P}_0 = \{U_\ell \times V_\ell\}_{\ell \in \mathcal{L}_0}$ be an exact biclique partition of $R_0$, and let $d \ge 1$ be an integer. Assume:
+  \begin{enumerate}[leftmargin=2em,label=\textup{(\roman*)}]
+    \item \textbf{Vertex-balanced $2$-coloring:} There is a coloring $f : \mathcal{L}_0 \to \{0, 1\}$ such that every $u_0 \in U_0$ lies in exactly $d$ sets $U_\ell$ with $f(\ell) = 0$ and $d$ sets $U_\ell$ with $f(\ell) = 1$, and every $v_0 \in V_0$ lies in exactly $d$ sets $V_\ell$ with $f(\ell) = 0$ and $d$ sets $V_\ell$ with $f(\ell) = 1$.
+    \item \textbf{Local $2$-biregular $4$-fiber blowup:} Let $\Sigma$ be a $4$-element set and $H \subseteq \Sigma \times \Sigma$ a $(2, 2)$-biregular relation. Suppose $R \subseteq (U_0 \times \Sigma) \times (V_0 \times \Sigma)$ satisfies $((u_0, \xi), (v_0, \zeta)) \in R \implies (u_0, v_0) \in R_0$, and for each $\ell \in \mathcal{L}_0$ there exist local fiber bijections $\phi_{\ell, u_0} : \Sigma \xrightarrow{\sim} \Sigma$ ($u_0 \in U_\ell$) and $\psi_{\ell, v_0} : \Sigma \xrightarrow{\sim} \Sigma$ ($v_0 \in V_\ell$) such that for all $(u_0, v_0) \in U_\ell \times V_\ell$ and $\xi, \zeta \in \Sigma$,
+    \[
+      \bigl((u_0, \xi), (v_0, \zeta)\bigr) \in R \iff \bigl(\phi_{\ell, u_0}(\xi),\, \psi_{\ell, v_0}(\zeta)\bigr) \in H.
+    \]
+  \end{enumerate}
+  Then $R$ admits an exact biclique partition into $4|\mathcal{L}_0|$ bicliques in which every vertex of $U_0 \times \Sigma$ and every vertex of $V_0 \times \Sigma$ has exact load $3d$.
+\end{lemma}
+
+\begin{proof}
+Index the $4$-element fiber $\Sigma$ itself as the label suffix $\iota \in \Sigma$. For each $\ell \in \mathcal{L}_0$ and $\iota \in \Sigma$, define $\widetilde{U}_{\ell, \iota} \subseteq U_\ell \times \Sigma$ and $\widetilde{V}_{\ell, \iota} \subseteq V_\ell \times \Sigma$ according to the color $f(\ell)$:
+\begin{itemize}[leftmargin=2em]
+  \item If $f(\ell) = 0$ (\emph{row $K_{1,2}$ stars}): set $\widetilde{U}_{\ell, \iota} := \{(u_0, \xi) \in U_\ell \times \Sigma : \phi_{\ell, u_0}(\xi) = \iota\}$ and $\widetilde{V}_{\ell, \iota} := \{(v_0, \zeta) \in V_\ell \times \Sigma : (\iota, \psi_{\ell, v_0}(\zeta)) \in H\}$.
+  \item If $f(\ell) = 1$ (\emph{column $K_{2,1}$ stars}): set $\widetilde{U}_{\ell, \iota} := \{(u_0, \xi) \in U_\ell \times \Sigma : (\phi_{\ell, u_0}(\xi), \iota) \in H\}$ and $\widetilde{V}_{\ell, \iota} := \{(v_0, \zeta) \in V_\ell \times \Sigma : \psi_{\ell, v_0}(\zeta) = \iota\}$.
+\end{itemize}
+By~(ii), each $\widetilde{U}_{\ell, \iota} \times \widetilde{V}_{\ell, \iota} \subseteq R$. Because $\mathcal{P}_0$ partitions $R_0$ and $((u_0, \xi), (v_0, \zeta)) \in R$ determines a unique $\ell \in \mathcal{L}_0$ with $(u_0, v_0) \in U_\ell \times V_\ell$, inside that block $\iota$ is uniquely forced to equal $\phi_{\ell, u_0}(\xi)$ when $f(\ell) = 0$ and $\psi_{\ell, v_0}(\zeta)$ when $f(\ell) = 1$. Thus $\{\widetilde{U}_{\ell, \iota} \times \widetilde{V}_{\ell, \iota}\}_{(\ell, \iota) \in \mathcal{L}_0 \times \Sigma}$ is an exact biclique partition of $R$.
+
+Finally, because $\phi_{\ell, u_0}$ and $\psi_{\ell, v_0}$ are bijections and $H$ is $(2, 2)$-biregular, each $(u_0, \xi)$ with $u_0 \in U_\ell$ belongs to $1$ set $\widetilde{U}_{\ell, \iota}$ when $f(\ell) = 0$ and $2$ sets $\widetilde{U}_{\ell, \iota}$ when $f(\ell) = 1$, while each $(v_0, \zeta)$ with $v_0 \in V_\ell$ belongs to $2$ sets $\widetilde{V}_{\ell, \iota}$ when $f(\ell) = 0$ and $1$ set $\widetilde{V}_{\ell, \iota}$ when $f(\ell) = 1$. By~(i), every vertex of $U_0 \times \Sigma$ has load $1 \cdot d + 2 \cdot d = 3d$ and every vertex of $V_0 \times \Sigma$ has load $2 \cdot d + 1 \cdot d = 3d$.
+\end{proof}
+
+\begin{theorem}[Exact Local Biclique Cover and Partition Numbers]
+  \label{thm:local-cover}
+  For every $t \ge 1$ ($s := t - 1$),
+  \begin{equation}
+    \label{eq:local-R}
+    \lbc(C_t) = \lbp(C_t) = \lbc(M_t) = \lbp(M_t) = \left\lceil \frac{2^{\lfloor s/2 \rfloor} + 2^{\lceil s/2 \rceil}}{2} \right\rceil
+    = \begin{cases}
+      2^{s/2} & (s\text{ even}), \\
+      2 & (s = 1), \\
+      3 \cdot 2^{(s-3)/2} & (s \ge 3\text{ odd}).
+    \end{cases}
+  \end{equation}
+\end{theorem}
+
+\begin{proof}
+Restricting any cover of $M_t$ to $x_0 = y_0 = w_{t-1} = z_{t-1} = 0$ gives $\lbc(M_t) \ge \lbc(C_t)$, while tensoring any partition of $C_t$ with $I_2$ and $J_2$ preserves vertex loads and gives $\lbp(M_t) \le \lbp(C_t)$. Since $\lbc(C_t) \le \lbp(C_t)$ and any exact cover of $C_t$ of maximum load $k$ satisfies $2k \ge \EE[|A| + |B|] \ge 2^{\lfloor s/2 \rfloor} + 2^{\lceil s/2 \rceil}$ by~\eqref{eq:unweighted-sum}, integrality of $k$ gives $\lbc(C_t) \ge \lceil(2^{\lfloor s/2 \rfloor} + 2^{\lceil s/2 \rceil})/2\rceil$. Notice that for odd $s = 2r + 1$, taking the half-weighted fractional combination $\frac{1}{2}\mathcal{P}_r + \frac{1}{2}\mathcal{P}_{r+1}$ of adjacent cyclic carry-cut partitions already gives uniform fractional vertex load $\frac{1}{2}(2^r + 2^{r+1}) = \frac{3}{2}\cdot 2^r$ ($= 3/2$ at $s = 1$ and $3 \cdot 2^{r-1}$ for $s \ge 3$).
+
+To match the integral lower bound with a genuine partition of $C_t$, note first that $\mathcal{P}_{s/2}^{\mathrm{core}}$ has uniform load $2^{s/2}$ for even $s \ge 0$, and $\mathcal{P}_0^{\mathrm{core}}$ has loads $(2, 1)$ ($\max = 2$) at $s = 1$. Now fix odd $s = 2r + 1 \ge 3$ ($r \ge 1$, $t = 2r + 2$), so the target load is $3 \cdot 2^{r-1}$. Write each row of $C_{2r+2}$ as $(\mathbf{u}_0, (a, X))$ and each column as $(\mathbf{v}_0, (b, Y))$, where $\mathbf{u}_0 = (x', w'),\, \mathbf{v}_0 = (y', z') \in \FF_2^{2r} \times \{0, \dots, 2^{2r}-1\}$ and $(a, X) = (w_{2r}, x_{2r+1}),\, (b, Y) = (z_{2r}, y_{2r+1}) \in \Sigma := \{0, 1\}^2$. Let $\eta(\mathbf{u}_0, \mathbf{v}_0) := c_{2r}(w', z') = \ind[w' > z']$. Checking $(a, b) \in \{0, 1\}^2$ in $w' + 2^{2r}a > z' + 2^{2r}b$ shows that $C_{2r+2}[(\mathbf{u}_0, (a, X)), (\mathbf{v}_0, (b, Y))] = 1$ if and only if $C_{2r+1}[\mathbf{u}_0, \mathbf{v}_0] = 1$ and, over $\FF_2$,
+\begin{equation}
+  \label{eq:top-carry-eq}
+  X \oplus Y \;=\; a(1 \oplus b) \oplus (1 \oplus a \oplus b)\,\eta(\mathbf{u}_0, \mathbf{v}_0).
+\end{equation}
+
+Take $\mathcal{P}_0 := \mathcal{P}_r^{\mathrm{core}}$ on $C_{2r+1}$ ($m = h = r$), which is $(2d, 2d)$-load-regular with $d := 2^{r-1} \ge 1$ and keys $\ell_0 = (w_{\mathrm{lo}}, x_{[1..r]}, q, \tilde{y}_{[r+1..2r]}) \in \mathcal{L}_0 = \{0, 1\}^{4r}$, and let $H \subseteq \Sigma \times \Sigma$ be the $(2, 2)$-biregular $\mathcal{C}_8$ relation $((A, X'), (B, Y')) \in H \iff X' \oplus Y' = A(1 \oplus B)$. We verify hypotheses~(i) and~(ii) of Lemma~\ref{lem:abstract-star-blowup}:
+\begin{enumerate}[leftmargin=2em,label=\arabic*.]
+  \item \emph{Balanced coloring:} Define $f(\ell_0) := q_0 \oplus x_r \oplus w_0 \in \{0, 1\}$, where $q_0 = q \bmod 2$ and $w_0 = w_{\mathrm{lo}} \bmod 2$. On a fixed row $\mathbf{u}_0$, $x_r$ and $w_0$ are fixed while $q \in \{0, \dots, 2^r - 1\}$ hits each parity $q_0 \in \{0, 1\}$ exactly $2^{r-1} = d$ times. On a fixed column $\mathbf{v}_0$, Bob's loop $w_{\mathrm{lo}} \in \{0, \dots, 2^r - 1\}$ sets $x_r = y_r \oplus c_r(w_{\mathrm{lo}}, z_{\mathrm{lo}})$ and $q = (z_{\mathrm{hi}} - c_r(w_{\mathrm{lo}}, z_{\mathrm{lo}})) \bmod 2^r$. Since $2^r$ is even ($r \ge 1$), reducing modulo $2$ gives $q_0 = (z_{\mathrm{hi}} \bmod 2) \oplus c_r$, so $q_0 \oplus x_r = (z_{\mathrm{hi}} \bmod 2) \oplus y_r$ is independent of $w_{\mathrm{lo}}$, while $w_0 = w_{\mathrm{lo}} \bmod 2$ hits each parity in $\{0, 1\}$ exactly $2^{r-1} = d$ times.
+  \item \emph{Local fiber bijections:} On each $U_{\ell_0} \times V_{\ell_0}$, Lemma~\ref{lem:mod-quotient} at $m = j = r$ gives $\eta(\mathbf{u}_0, \mathbf{v}_0) = \ind[w_{\mathrm{hi}} > q] \oplus \ind[c_r = 1 \text{ and } z_{\mathrm{hi}} = 0]$. When $q < 2^r - 1$, $(z_{\mathrm{hi}} - c_r) \bmod 2^r = q < 2^r - 1$ rules out $(c_r = 1, z_{\mathrm{hi}} = 0)$, so $\eta = \gamma(\mathbf{u}_0) := \ind[w_{\mathrm{hi}} > q]$ depends only on $\mathbf{u}_0$; setting $\phi_{\ell_0, \mathbf{u}_0}(a, X) := (a \oplus \gamma,\, X \oplus (a \lor \gamma))$ and $\psi_{\ell_0, \mathbf{v}_0}(b, Y) := (1 \oplus b, Y)$ converts~\eqref{eq:top-carry-eq} into $X' \oplus Y' = A(1 \oplus B)$ via $a \lor \gamma = a \oplus \gamma \oplus a\gamma$. When $q = 2^r - 1$, $\ind[w_{\mathrm{hi}} > 2^r - 1] = 0$, so $\eta = \delta(\mathbf{v}_0) := \ind[c_r(w_{\mathrm{lo}}, z_{\mathrm{lo}}) = 1 \text{ and } z_{\mathrm{hi}} = 0]$ depends only on $(\ell_0, \mathbf{v}_0)$; setting $\phi_{\ell_0, \mathbf{u}_0}(a, X) := (a, X)$ and $\psi_{\ell_0, \mathbf{v}_0}(b, Y) := (b \oplus \delta,\, Y \oplus \delta(1 \oplus b))$ likewise converts~\eqref{eq:top-carry-eq} into $X' \oplus Y' = A(1 \oplus B)$.
+\end{enumerate}
+Lemma~\ref{lem:abstract-star-blowup} therefore yields a biclique partition of $C_{2r+2}$ with exact load $3d = 3 \cdot 2^{r-1}$ at every vertex.
+\end{proof}
+
+\begin{proposition}[$s = 3$ Equivariant Obstruction]
+  \label{prop:s3-obstruction}
+  At $s = 3$ ($t = 4$), no biclique cover of $C_4$ invariant under the diagonal shift action $g \cdot ((x', w'), (y', z')) = ((x' \oplus g, w'), (y' \oplus g, z'))$ of $\FF_2^3$ (even allowing overlaps or non-maximal rectangles) achieves maximum vertex load $\le 3$: every $\FF_2^3$-equivariant cover of $C_4$ has maximum vertex load $\ge 4$.
+\end{proposition}
+
+\begin{proof}
+Any $\FF_2^3$-equivariant exact cover of $C_4$ decomposes into the $8$-lift orbits of a family $\mathcal{G} = \{(W_k, Z_k)\}_{k=1}^M$ of cocycle-valid pairs covering $\{0, \dots, 7\}^2$, and because the $8$ compatible lifts of $(W_k, Z_k)$ partition $\FF_2^3 \times W_k$ and $\FF_2^3 \times Z_k$, the vertex loads at $(x', w')$ and $(y', z')$ equal the grid degrees $\deg_{\mathcal{G}}(w')$ and $\deg_{\mathcal{G}}(z')$. By Theorem~\ref{thm:factorization-bicliques}(c), every cocycle-valid pair $(W_k, Z_k)$ embeds in a maximal pair of area $8$ and therefore satisfies $|W_k| + |Z_k| \ge \frac{3}{4}|W_k||Z_k|$, with equality iff $(|W_k|, |Z_k|) \in \{(2, 4), (4, 2)\}$. If $\deg_{\mathcal{G}} \le 3$ everywhere, then
+\[
+  48 \;\ge\; \sum_{w'=0}^7 \deg_{\mathcal{G}}(w') + \sum_{z'=0}^7 \deg_{\mathcal{G}}(z')
+  \;=\; \sum_{k=1}^M \bigl(|W_k| + |Z_k|\bigr)
+  \;\ge\; \frac{3}{4}\sum_{k=1}^M |W_k||Z_k|
+  \;\ge\; \frac{3}{4}\cdot 64 \;=\; 48,
+\]
+forcing $\mathcal{G}$ to be a disjoint $8$-rectangle tiling of $\{0, \dots, 7\}^2$ chosen from the $48$ maximal cocycle-valid pairs of shapes $(2, 4)$ and $(4, 2)$ with $\deg_{\mathcal{G}} \equiv 3$. By Proposition~\ref{prop:enum-s3} (Appendix~\ref{app:s3-cert}), those $48$ pairs admit exactly $50$ disjoint tilings of $\{0, \dots, 7\}^2$, and all $50$ have maximum vertex degree~$4$. Theorem~\ref{thm:local-cover} bypasses this obstruction because $f(\ell_0) = q_0 \oplus x_r \oplus w_0$ depends on the lift coordinate $x_r$, alternating row and column stars across $\FF_2^3$-orbits.
+\end{proof}
+
+\section{Abelian Group-Circulant Fourier Analysis, All-Field Ranks, and Structural Corollaries}
+\label{sec:fourier}
+
+\subsection{Direct Group-Circulant Diagonalization on \texorpdfstring{$\FF_2^t \times (\ZZ/2^t\ZZ)$}{F\_2\^t x (Z/2\^t Z)}}
+Before analyzing the borrow-coordinate blocks of $C_t$, observe that in original coordinates $(u, w), (v, z)$ on the finite abelian group $G_t := \FF_2^t \times (\ZZ/2^t\ZZ)$ under $(u, w) \star (a, b) := (u \oplus a, (w + b) \bmod 2^t)$,
+\begin{equation}
+  \label{eq:group-circulant}
+  M_t\bigl[(u, w), (v, z)\bigr] \;=\; \ind\bigl[u \oplus v = (z - w) \bmod 2^t\bigr].
+\end{equation}
+Thus $M_t$ depends solely on the group difference $(v, z) \star (u, w)^{-1}$ and is a \emph{group-circulant} (Cayley) operator on $G_t$ for the generating graph $S_t = \{(d, d) : 0 \le d < 2^t\} \subseteq G_t$. Consequently, the orthonormal mixed Walsh--Fourier characters $\chi_{\alpha, k}(u, w) := 2^{-t}(-1)^{\langle \alpha, u \rangle} e^{2\pi i k w / 2^t}$ ($(\alpha, k) \in \FF_2^t \times \{0, \dots, 2^t - 1\}$) diagonalize $M_t$ unitarily: writing $d = \sum_{j=0}^{t-1} d_j 2^j$,
+\begin{equation}
+  \label{eq:cayley-eigenvalues}
+  M_t \chi_{\alpha, k} \;=\; \lambda_{\alpha, k}\,\chi_{\alpha, k}, \qquad
+  \lambda_{\alpha, k} \;=\; \sum_{d=0}^{2^t-1} (-1)^{\langle \alpha, d \rangle} e^{2\pi i k d / 2^t}
+  \;=\; \prod_{j=0}^{t-1} \Bigl(1 + (-1)^{\alpha_j} e^{2\pi i k 2^j / 2^t}\Bigr).
+\end{equation}
+This immediately yields the complex rank of $M_t$ and $C_t$:
+\begin{itemize}[leftmargin=2em]
+  \item For $k = 0$, $\lambda_{\alpha, 0} = \prod_{j=0}^{t-1}(1 + (-1)^{\alpha_j}) \neq 0 \iff \alpha = \zero$ ($1$ mode, $\lambda_{\zero, 0} = 2^t$).
+  \item For $1 \le k < 2^t$ with $2$-adic valuation $v := v_2(k) \in \{0, \dots, t - 1\}$, put $r' := t - 1 - v \in \{0, \dots, t - 1\}$, so $k = 2^{t-1-r'}(2\ell + 1)$ ($2^{r'}$ odd parts $\ell$). In~\eqref{eq:cayley-eigenvalues}, the factors with $j > r'$ equal $1 + (-1)^{\alpha_j}$ (nonzero iff $\alpha_j = 0$), the factor $j = r'$ equals $1 - (-1)^{\alpha_{r'}}$ (nonzero iff $\alpha_{r'} = 1$), and for $0 \le j < r'$ the phase $e^{2\pi i (2\ell+1)/2^{r'+1-j}} \notin \{\pm 1\}$ makes $1 + (-1)^{\alpha_j}e^{2\pi i k 2^j / 2^t} \neq 0$ for all $\alpha_j \in \{0, 1\}$. Thus exactly $2^{r'}$ masks $\alpha$ pair with each of the $2^{r'}$ frequencies $k$, contributing $4^{r'}$ nonzero eigenvalues.
+\end{itemize}
+Summing over $r' = 0, \dots, t - 1$ gives $\rk_{\CC}(M_t) = 1 + \sum_{r'=0}^{t-1} 4^{r'} = (4^t + 2)/3$ and $\rk_{\CC}(C_t) = \frac{1}{2}\rk_{\CC}(M_t) = (2\cdot 4^s + 1)/3$.
+
+Equation~\eqref{eq:cayley-eigenvalues} also clarifies how the bipartite singular spectrum of $M_t$ differs from the scalar Walsh transform of modular addition analyzed by Schulte-Geers~\cite{SG13}. Schulte-Geers proved that the vectorial Boolean function $(x, y) \mapsto x \boxplus y \pmod{2^t}$ is CCZ-equivalent to a quadratic function over $\FF_2$, so its $\FF_2^{3t}$-Walsh coefficients take only zero or signed powers of $\sqrt{2}$. By contrast, $M_t$ couples $\FF_2^t$-addition on $(u, v)$ with cyclic $\ZZ/2^t\ZZ$-addition on $(w, z)$; diagonalizing across this mixed group evaluates $2^{r'+1}$-th roots of unity inside~\eqref{eq:cayley-eigenvalues}, producing algebraic cosine-product singular values rather than dyadic powers.
+
+\subsection{Negacyclic Shift Factorization and Arbitrary-Field Ranks}
+Let $\mathcal{H}_s := 2^{-s/2}[(-1)^{\langle \alpha, x' \rangle}]_{\alpha, x' \in \FF_2^s}$ be the orthonormal Walsh--Hadamard matrix, and for $\alpha = (\alpha_1, \dots, \alpha_s) \in \FF_2^s$ define $H_\alpha \in \{\pm 1\}^{2^s \times 2^s}$ by $H_\alpha[w', z'] := (-1)^{\langle \alpha, \bv(w', z') \rangle}$. For $r \ge 1$, let $T \in \ZZ^{2^r \times 2^r}$ denote the \emph{negacyclic shift matrix} ($T[w, w+1] = 1$ for $0 \le w \le 2^r - 2$, $T[2^r - 1, 0] = -1$, and $0$ otherwise), which satisfies $T^{2^r} = -I_{2^r}$. Let $e_1, \dots, e_s$ be the unit vectors of $\FF_2^s$, and for an $N_A \times N_B$ matrix $M$ of edge density $p = |E(M)|/(N_A N_B)$ denote its \emph{centered spectral norm} by $\Lambda(M) := \|M - p\,\ind\ind^T\|_2$.
+
+\begin{theorem}[Negacyclic Factorization, All-Field Ranks, and Sharp Singular Envelope]
+  \label{thm:walsh-spectrum}
+  Let $t \ge 1$ and $s := t - 1$.
+  \begin{enumerate}[leftmargin=2em,label=\textup{(\alph*)}]
+    \item \textbf{Walsh block-diagonalization and integer negacyclic identity:} Orthonormal conjugation gives
+    \begin{equation}
+      \label{eq:walsh-blocks}
+      (\mathcal{H}_s \otimes I_{2^s})\,C_t\,(\mathcal{H}_s \otimes I_{2^s}) \;=\; \bigoplus_{\alpha \in \FF_2^s} H_\alpha, \qquad H_{\zero} = J_{2^s}.
+    \end{equation}
+    For $\alpha \neq \zero$ with highest nonzero index $r := \max\{i \in \{1, \dots, s\} : \alpha_i = 1\}$, writing $w' = 2^r q_w + w$ and $z' = 2^r q_z + z$ ($0 \le w, z < 2^r$) factors $H_\alpha = J_{2^{s-r}} \otimes \widetilde{H}_\alpha$. Setting $\alpha_0 := 0$ and $D := \diag\bigl((-1)^{\sum_{j=1}^{r-1} \alpha_j w_j}\bigr)_{w=0}^{2^r-1} \in \ZZ^{2^r \times 2^r}$ ($D^2 = I_{2^r}$), we have over $\ZZ$:
+    \begin{equation}
+      \label{eq:negacyclic-prod}
+      D\,\widetilde{H}_\alpha\,D \;=\; G_\alpha(T) \;:=\; \prod_{j=0}^{r-1}\bigl(I_{2^r} + (-1)^{\alpha_j} T^{2^j}\bigr).
+    \end{equation}
+
+    \item \textbf{Exact rank over arbitrary fields:} For every field $F$:
+    \begin{equation}
+      \label{eq:all-field-ranks}
+      \rk_F(C_t) = \begin{cases}
+        \dfrac{2 \cdot 4^s + 1}{3} & \text{if } \operatorname{char} F \neq 2, \\[8pt]
+        \dbinom{2^s + 1}{2} = \dfrac{4^s + 2^s}{2} & \text{if } \operatorname{char} F = 2,
+      \end{cases}
+      \qquad
+      \rk_F(M_t) = 2\,\rk_F(C_t) = \begin{cases}
+        \dfrac{4^t + 2}{3} & \text{if } \operatorname{char} F \neq 2, \\[8pt]
+        4^s + 2^s & \text{if } \operatorname{char} F = 2.
+      \end{cases}
+    \end{equation}
+
+    \item \textbf{Closed-form singular values, sharp envelope, and centered spectral norm:} As $\zeta_\ell := e^{(2\ell + 1)\pi i / 2^r}$ ranges over the $2^r$ eigenvalues of $T$ ($0 \le \ell < 2^r$), the nonzero singular values of $H_\alpha$ ($\alpha \neq \zero$) are $\sigma_\ell(H_\alpha) = 2^{s-r}\bigl|\prod_{j=0}^{r-1}(1 + (-1)^{\alpha_j}\zeta_\ell^{2^j})\bigr| > 0$, satisfying
+    \begin{equation}
+      \label{eq:spectral-env}
+      \|H_\alpha\|_2 \;\le\; \frac{2^{s-r}}{\sin(\pi / 2^{r+1})},
+    \end{equation}
+    with equality at $r = 1$ for $\alpha = e_1$, and for $r \ge 2$ \emph{if and only if} $\alpha \in \{e_r, e_r + e_{r-1}\}$ (each with multiplicity~$2$ at $\ell \in \{0, 2^r - 1\}$). Consequently, $\sigma_1(C_t) = 2^{t-1}$ ($\alpha = \zero$), $\Lambda(C_1) = 0$, $\Lambda(M_t) = 2^t$ for all $t \ge 1$, and for $t \ge 2$,
+    \begin{equation}
+      \label{eq:second-sv}
+      \Lambda(C_t) = \sigma_2(C_t) = 2^{t - 3/2}\;(\text{mult } 2,\; \alpha = e_1), \qquad
+      \max_{\alpha \notin \{\zero, e_1\}} \|H_\alpha\|_2 = \frac{2^{t-1}}{4\sin(\pi / 8)}\;(\text{mult } 4,\; t \ge 3).
+    \end{equation}
+  \end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(a)} Over $\ZZ$, the unnormalized Walsh matrix $W_s := 2^{s/2}\mathcal{H}_s \in \{\pm 1\}^{2^s \times 2^s}$ satisfies $W_s^2 = 2^s I_{2^s}$ and $((W_s \otimes I_{2^s}) C_t (W_s \otimes I_{2^s}))[(\alpha, w'), (\beta, z')] = \sum_{x' \in \FF_2^s} (-1)^{\langle \alpha \oplus \beta, x' \rangle} H_\alpha[w', z'] = \ind[\alpha = \beta]\,2^s H_\alpha[w', z']$, giving~\eqref{eq:walsh-blocks}. For $\alpha \neq \zero$ with top bit $r$, $c_j(w', z')$ ($1 \le j \le r$) depends only on $(w' \bmod 2^r, z' \bmod 2^r)$, factoring $H_\alpha = J_{2^{s-r}} \otimes \widetilde{H}_\alpha$. For $0 \le w, z < 2^r$, $T^k[w, z]$ ($0 \le k < 2^r$) is nonzero solely at $k = (z - w) \bmod 2^r = \sum_{j=0}^{r-1} k_j 2^j$, where $T^k[w, z] = (-1)^{c_r(w, z)}$. Since $k_j = w_j \oplus z_j \oplus c_j(w, z)$ ($1 \le j \le r - 1$), $\alpha_0 = 0$, and $\alpha_r = 1$, expanding $G_\alpha(T) = \sum_{k=0}^{2^r-1}(-1)^{\sum_{j=0}^{r-1}\alpha_j k_j} T^k$ gives $G_\alpha(T)[w, z] = (-1)^{c_r(w,z) + \sum_{j=1}^{r-1}\alpha_j k_j} = (D\widetilde{H}_\alpha D)[w, z]$, proving~\eqref{eq:negacyclic-prod}.
+
+\medskip
+\noindent\textbf{(b)} In $M_t \cong I_2 \otimes C_t \otimes J_2$, $\rk_F(I_2) = 2$ and $\rk_F(J_2) = 1$ over every field $F$, so $\rk_F(M_t) = 2\,\rk_F(C_t)$.
+\begin{itemize}[leftmargin=2em]
+  \item \emph{Case $\operatorname{char} F \neq 2$:} In $\ZZ[T]/(T^{2^r} + I_{2^r})$, repeated difference-of-squares telescoping gives, for every $0 \le j \le r - 1$ and $\varepsilon_j := (-1)^{\alpha_j} \in \{\pm 1\}$,
+  \begin{equation}
+    \label{eq:int-telescope}
+    \bigl(I_{2^r} + \varepsilon_j T^{2^j}\bigr)\bigl(I_{2^r} - \varepsilon_j T^{2^j}\bigr)\prod_{m=j+1}^{r-1}\bigl(I_{2^r} + T^{2^m}\bigr)
+    \;=\; I_{2^r} - T^{2^r} \;=\; 2\,I_{2^r}.
+  \end{equation}
+  Setting $Q_\alpha(T) := \prod_{j=0}^{r-1}\bigl[(I_{2^r} - \varepsilon_j T^{2^j})\prod_{m=j+1}^{r-1}(I_{2^r} + T^{2^m})\bigr] \in \ZZ^{2^r \times 2^r}$, commuting factors yield $G_\alpha(T)\,Q_\alpha(T) = 2^r I_{2^r}$ over $\ZZ$. Over any field $F$ with $2 \neq 0$, $W_s \otimes I_{2^s}$, $D$, and $G_\alpha(T)$ are all invertible, while $\rk_F(J_{2^{s-r}}) = 1$, so $\rk_F(H_\alpha) = 2^r$ for each of the $2^{r-1}$ vectors $\alpha$ with top bit $r$, giving $\rk_F(C_t) = 1 + \sum_{r=1}^s 2^{r-1} 2^r = (2\cdot 4^s + 1)/3$.
+
+  \item \emph{Case $\operatorname{char} F = 2$:} Let $Y \in F^{2^t \times 2^t}$ be the cyclic shift $Y[w, z] = \ind[z \equiv w + 1 \pmod{2^t}]$ on $\ZZ/2^t\ZZ$, generating the commutative algebra $R_t := F[Y]/(Y^{2^t} - I) \cong F[N]/(N^{2^t})$ where $N := I + Y$ satisfies $N^{2^t} = I + Y^{2^t} = 0$. By~\eqref{eq:group-circulant}, viewing $M_t$ as a $2^t \times 2^t$ block matrix over $R_t$ indexed by $u, v \in \{0, 1\}^t$ gives the $(u, v)$-block $Y^{u \oplus v} = \prod_{i=0}^{t-1} (Y^{2^i})^{u_i \oplus v_i}$, so
+  \[
+    M_t \;=\; \bigotimes_{i=0}^{t-1} \begin{pmatrix} 1 & Y^{2^i} \\ Y^{2^i} & 1 \end{pmatrix} \;\in\; \operatorname{Mat}_{2^t \times 2^t}(R_t).
+  \]
+  Because $\operatorname{char} F = 2$, unitriangular elimination over $R_t$ on each $2 \times 2$ factor gives
+  \[
+    \begin{pmatrix} 1 & 0 \\ Y^{2^i} & 1 \end{pmatrix}
+    \begin{pmatrix} 1 & Y^{2^i} \\ Y^{2^i} & 1 \end{pmatrix}
+    \begin{pmatrix} 1 & Y^{2^i} \\ 0 & 1 \end{pmatrix}
+    \;=\; \begin{pmatrix} 1 & 0 \\ 0 & 1 + Y^{2^{i+1}} \end{pmatrix}
+    \;=\; \diag\bigl(1,\; N^{2^{i+1}}\bigr).
+  \]
+  Taking the $t$-fold Kronecker product of these $\mathrm{SL}_2(R_t)$ equivalences transforms $M_t$ into $\diag_{k=0}^{2^t-1} N^{2k}$ as $k = \sum_{i \in S} 2^i$ ranges over subsets $S \subseteq \{0, \dots, t - 1\}$. On $F[N]/(N^{2^t})$, multiplication by $N^{2k}$ has $F$-rank $2^t - 2k$ for $0 \le k < 2^{t-1}$ and $0$ for $k \ge 2^{t-1}$, so
+  \[
+    \rk_F(M_t) \;=\; \sum_{k=0}^{2^{t-1}-1} (2^t - 2k) \;=\; 2 \sum_{m=1}^{2^{t-1}} m \;=\; 2^{t-1}(2^{t-1} + 1) \;=\; 4^s + 2^s,
+  \]
+  and $\rk_F(C_t) = \frac{1}{2}\rk_F(M_t) = \frac{1}{2}2^s(2^s + 1) = \binom{2^s + 1}{2}$.
+\end{itemize}
+
+\medskip
+\noindent\textbf{(c)} Over $\CC$, $T$ is unitary with eigenvalues $\zeta_\ell = e^{(2\ell+1)\pi i / 2^r}$, giving $\sigma_\ell(H_\alpha) = 2^{s-r}|G_\alpha(\zeta_\ell)|$. Writing $m := r - j \ge 1$, $(-1)^{\alpha_j}\zeta_\ell^{2^j} = e^{i k_j \pi / 2^m}$ for an odd integer $k_j$, so $|1 + (-1)^{\alpha_j}\zeta_\ell^{2^j}| = 2|\cos(k_j \pi / 2^{m+1})| \le 2\cos(\pi / 2^{m+1})$, and telescoping $\prod_{m=1}^r 2\cos(\pi/2^{m+1}) = 1/\sin(\pi/2^{r+1})$ proves~\eqref{eq:spectral-env}. At $j = 0$ ($\alpha_0 = 0$), $|1 + \zeta_\ell| = 2\cos(\pi/2^{r+1})$ forces $\ell \in \{0, 2^r - 1\}$, i.e., $\zeta_\ell = e^{\pm i\pi / 2^r}$. Then for $1 \le j \le r - 2$ ($m \ge 2$), $2\sin(\pi/2^{m+1}) < 2\cos(\pi/2^{m+1})$ forces $\alpha_j = 0$, whereas at $j = r - 1$ ($m = 1$), $|1 \pm (\pm i)| = \sqrt{2}$ holds for both $\alpha_{r-1} \in \{0, 1\}$. Monotonicity of $2^{r+1}\sin(\pi/2^{r+1})$ yields~\eqref{eq:second-sv}, while $M_t \cong \diag(C_t \otimes J_2, C_t \otimes J_2)$ has two singular values $2^t$, one canceled by subtracting $2^{-t}\ind\ind^T$, leaving $\Lambda(M_t) = 2^t$.
+\end{proof}
+
+Table~\ref{tab:small-t-invariants} summarizes the exact invariants of $C_t$ and $M_t$ established in Sections~\ref{sec:core-partitions}--\ref{sec:fourier}.
+
+\begin{table}[t]
+  \centering
+  \caption{Combinatorial, arbitrary-field rank, and spectral invariants of $C_t$ and $M_t$ ($s = t - 1$).}
+  \label{tab:small-t-invariants}
+  \footnotesize
+  \setlength{\tabcolsep}{3.5pt}
+  \resizebox{\ifdim\width>\textwidth\textwidth\else\width\fi}{!}{%
+  \begin{tabular}{@{}ccccccccc@{}}
+    \toprule
+    \shortstack{$t$\\ ($s$)} & \shortstack{$C_t$\\ dim.} & \shortstack{$A_{\max}(C_t)$ /\\ $A_{\max}(M_t)$} & \shortstack{$\bc(C_t)$ /\\ $\bc(M_t)$} & \shortstack{$\rk_{\operatorname{char}\neq 2}$\\ $(C_t)$ / $(M_t)$} & \shortstack{$\rk_{\FF_2}$\\ $(C_t)$ / $(M_t)$} & \shortstack{$\min$\\ $\EE[|A|{+}|B|]$} & \shortstack{$\lbc{=}\lbp$\\ $(C_t, M_t)$} & \shortstack{$\Lambda(C_t)$ /\\ $\Lambda(M_t)$} \\
+    \midrule
+    $1$ ($0$) & $1 \times 1$ & $1$ / $4$ & $1$ / $2$ & $1$ / $2$ & $1$ / $2$ & $2$ & $1$ & $0$ / $2$ \\
+    $2$ ($1$) & $4 \times 4$ & $2$ / $8$ & $4$ / $8$ & $3$ / $6$ & $3$ / $6$ & $3$ & $2$ & $\sqrt{2}$ / $4$ \\
+    $3$ ($2$) & $16 \times 16$ & $4$ / $16$ & $16$ / $32$ & $11$ / $22$ & $10$ / $20$ & $4$ & $2$ & $2\sqrt{2}$ / $8$ \\
+    $4$ ($3$) & $64 \times 64$ & $8$ / $32$ & $64$ / $128$ & $43$ / $86$ & $36$ / $72$ & $6$ & $3$ & $4\sqrt{2}$ / $16$ \\
+    $5$ ($4$) & $256 \times 256$ & $16$ / $64$ & $256$ / $512$ & $171$ / $342$ & $136$ / $272$ & $8$ & $4$ & $8\sqrt{2}$ / $32$ \\
+    \midrule
+    Gen.\ $t$ & $2^{2s}\!\times\! 2^{2s}$ & $2^{t-1}$ / $2^{t+1}$ & $2^{2t-2}$ / $2^{2t-1}$ & $\tfrac{2\cdot 4^s+1}{3}$ / $\tfrac{4^t+2}{3}$ & $\binom{2^s+1}{2}$ / $4^s{+}2^s$ & $2^{\lfloor s/2 \rfloor}{+}2^{\lceil s/2 \rceil}$ & $\lceil\tfrac{2^{\lfloor s/2 \rfloor}+2^{\lceil s/2 \rceil}}{2}\rceil$ & $2^{t-3/2}\,(t{\ge}2)$ / $2^t$ \\
+    \bottomrule
+  \end{tabular}%
+  }
+\end{table}
+
+\subsection{Structural and Communication-Complexity Corollaries}
+
+\begin{proposition}[Rank Ratio, $\gamma_2$ Norm, Embedded $\DISJ_s$, and Margin Realization]
+  \label{prop:corollaries}
+  Let $t \ge 1$ and $s := t - 1$.
+  \begin{enumerate}[leftmargin=2em,label=\textup{(\alph*)}]
+    \item \textbf{Rank-to-partition ratio and deterministic/nondeterministic communication:} For every $t \ge 1$,
+    \[
+      \frac{\rk_{\QQ}(M_t)}{\cp(M_t)} \;=\; \frac{2}{3}\bigl(1 + 2^{1 - 2t}\bigr) \xrightarrow{t \to \infty} \frac{2}{3}, \qquad
+      \frac{\rk_{\FF_2}(M_t)}{\cp(M_t)} \;=\; \frac{1}{2}\bigl(1 + 2^{1 - t}\bigr) \xrightarrow{t \to \infty} \frac{1}{2}.
+    \]
+    The $1$-cover nondeterministic and recipient-output deterministic communication complexities equal $N^1(C_t) = D^{\mathrm{out}}(C_t) = 2s$ and $N^1(M_t) = D^{\mathrm{out}}(M_t) = 2t - 1$ (and in the transcript-output convention~\cite{KN97}, $D(C_1) = 0$, $D(C_t) = 2s + 1$ for $s \ge 1$, and $D(M_t) = 2t$ for $t \ge 1$).
+
+    \item \textbf{Exact nuclear and $\gamma_2$ factorization norms:} Under the factorization norm $\gamma_2(A) := \min_{X Y^T = A} \|X\|_{2 \to \infty}\|Y\|_{2 \to \infty}$~\cite{LS09},
+    \begin{equation}
+      \label{eq:gamma2}
+      \gamma_2(C_t) \;=\; \gamma_2(M_t) \;=\; 2^{-2s}\,\|C_t\|_* \;=\; 2^{-2t}\,\|M_t\|_*.
+    \end{equation}
+
+    \item \textbf{Embedded $\DISJ_s$, zero-cover, discrepancy, and margin:} Restricting $C_t$ to $x' = y' = \zero$ and setting $\bar{z}' := (2^s - 1) - z'$ embeds the $2^s \times 2^s$ Set Disjointness matrix verbatim:
+    \begin{equation}
+      \label{eq:disj-embed}
+      C_t\bigl[(\zero, w'), (\zero, z')\bigr] \;=\; \ind\bigl[\bv(w', z') = \zero\bigr] \;=\; \ind\bigl[\forall\, j < s,\; \neg(w'_j \land \bar{z}'_j)\bigr] \;=\; \DISJ_s(w', \bar{z}').
+    \end{equation}
+    Consequently, bounded-error randomized and quantum communication complexities satisfy $R(C_t) = \Theta(s)$ and $Q^*(C_t) = \Theta(\sqrt{s})$~\cite{Raz92,AA05}. Conversely, the zero entries of $C_t$ admit an explicit cover by $M_0(s) \le 8s$ all-zeros rectangles ($M_0(0) = 0$, $M_0(s) = 8s - 4$ for $s \ge 1$), yielding $\disc(C_t) = \Theta(1/s)$ ($s \ge 1$) and a signed real matrix $S = \ind\ind^T - 2\sum_{q=1}^{M_0(s)} \ind_{R_q}$ decomposed into $M_0(s) + 1 \le 8s + 1$ rank-$1$ $\{0, 1\}$-rectangles of $\ell_1$-weight $2 M_0(s) + 1 \le 16s + 1$ satisfying $S[r, c] = 1$ when $C_t[r, c] = 1$, $S[r, c] \le -1$ when $C_t[r, c] = 0$, and $\gamma_2(S) \le 2 M_0(s) + 1 = O(s)$ (normalized margin $\ge (2 M_0(s) + 1)^{-1} = \Omega(1/s)$).
+  \end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\textbf{(a)} Combine~\eqref{eq:bc-cp} and~\eqref{eq:all-field-ranks}. Since $N^1(A) = \lceil \log_2 \bc(A) \rceil$,~\eqref{eq:bc-cp} gives $N^1(C_t) = 2s$ and $N^1(M_t) = 2t - 1$. Any $d$-bit recipient-output deterministic protocol partitions the $1$-entries into at most $2^d$ disjoint rectangles, forcing $d \ge \log_2 \cp$, matched when Alice sends $(x', w') \in \{0, 1\}^{2s}$ on $C_t$ or $(x_0, x', w') \in \{0, 1\}^{2t-1}$ on $M_t$; requiring the public transcript to determine the output adds at least one $0$-leaf when zeros exist ($2^d \ge \cp + 1$), matched by echoing $1$ bit back.
+
+\medskip
+\noindent\textbf{(b)} For any $N \times N$ matrix $A = X Y^T$, $\|A\|_* \le \|X\|_F\|Y\|_F \le N \|X\|_{2 \to \infty}\|Y\|_{2 \to \infty}$, so $\gamma_2(A) \ge N^{-1}\|A\|_*$. Conversely, diagonalizing $C_t$ via $\mathcal{H}_s \otimes I_{2^s}$, the normalized all-ones vector $2^{-(s-r)/2}\ind$ on $J_{2^{s-r}}$, $D$, and the negacyclic DFT $U_{\mathrm{neg}}[w, \ell] = 2^{-r/2} e^{i(2\ell+1)\pi w / 2^r}$ produces orthonormal singular vectors $C_t = U \Sigma V^*$ in which every entry of $U$ and $V$ has modulus $2^{-s/2} \cdot 2^{-s/2} = 2^{-s}$. Setting $X := U \Sigma^{1/2}$ and $Y := \overline{V} \Sigma^{1/2}$ (and viewing $\CC^N \cong \RR^{2N}$ isometrically) gives $\|X_{i,\cdot}\|_2^2 = \|Y_{j,\cdot}\|_2^2 = 2^{-2s}\sum_\nu \sigma_\nu(C_t) = 2^{-2s}\|C_t\|_*$ for every row $i$ and column $j$, proving~\eqref{eq:gamma2} (and tensoring with $I_2$ and $J_2$ multiplies $\|C_t\|_*$ and $N$ both by~$4$).
+
+\medskip
+\noindent\textbf{(c)} By induction on $i = 1, \dots, s$, $(w' \bmod 2^i) \le (z' \bmod 2^i)$ for all $1 \le i \le s$ holds iff $w'_j \le z'_j$ for all $0 \le j < s$, which is $\neg(w'_j \land \bar{z}'_j)$, proving~\eqref{eq:disj-embed}. Hence $R(C_t) \ge R(\DISJ_s) = \Omega(s)$~\cite{Raz92} and $Q^*(C_t) \ge Q^*(\DISJ_s) = \Omega(\sqrt{s})$~\cite{AA05}, matched up to constants on $C_t$ by running binary search (with randomized hashing~\cite{KN97} or quantum search~\cite{AA05}) for the least bit $j \in \{0, \dots, s - 1\}$ (with $x'_0 = y'_0 = 0$) where the local carry transition $x'_{j+1} \oplus y'_{j+1} = \maj(w'_j, 1 - z'_j, x'_j \oplus y'_j)$ fails. Explicitly, $C_t[(x', w'), (y', z')] = 0$ holds iff this transition fails at some $0 \le j < s$; fixing Bob's local bits $(y'_1, z'_0) \in \{0, 1\}^2$ at $j = 0$ gives $4$ all-zeros rectangles, and fixing $(y'_j, z'_j, y'_{j+1}) \in \{0, 1\}^3$ at each $1 \le j < s$ gives $8(s - 1)$ all-zeros rectangles, totaling $M_0(s) = 8s - 4$. Under any distribution $\mu$ on $C_t$, either $\mu(C_t^{-1}(1)) \ge \frac{1}{2} + \frac{1}{4M_0(s)}$ (giving discrepancy $\ge \frac{1}{2M_0(s)}$ on the whole matrix) or $\mu(C_t^{-1}(0)) \ge \frac{1}{2} - \frac{1}{4M_0(s)}$, so one of the $M_0(s)$ all-zeros rectangles has $\mu$-measure $\ge \frac{1}{2M_0(s)} - \frac{1}{4M_0(s)^2} = \Omega(1/s)$; conversely, supporting $\mu$ on the embedded $\DISJ_s$ submatrix~\eqref{eq:disj-embed} gives $\disc(C_t) \le \disc(\DISJ_s) = O(1/s)$~\cite{KN97}, hence $\disc(C_t) = \Theta(1/s)$. Finally, $S = \ind\ind^T - 2\sum_{q=1}^{M_0(s)} \ind_{R_q}$ takes value $1$ on ones of $C_t$ and $\le -1$ on zeros, and $\gamma_2(\ind_{R_q}) \le 1$ gives $\gamma_2(S) \le 2 M_0(s) + 1$ by the triangle inequality.
+\end{proof}
+
+\begin{remark}[Centered spectral cover inequality on $C_t$]
+  \label{rem:spectral-cover}
+  For any Boolean matrix $M$ of edge density $p = |E|/(N_A N_B) \in (0, 1)$ with $\Lambda(M) > 0$, every all-ones rectangle $U_\ell \times V_\ell$ ($a_\ell = |U_\ell|, b_\ell = |V_\ell|$) satisfies $a_\ell b_\ell = \ind_{U_\ell}^T M \ind_{V_\ell} \le p a_\ell b_\ell + \Lambda(M)\sqrt{a_\ell b_\ell}$, so $(1 - p)a_\ell b_\ell \le \frac{1}{2}\Lambda(M)(a_\ell + b_\ell)$; summing over any exact cover gives $W_{\mathrm{label}} \ge \frac{2(1 - p)|E|}{\Lambda(M)}$. On $C_t$ ($t \ge 2$, $p = 2^{-s}$, $|E| = 2^{3s}$, $\Lambda(C_t) = 2^{s-1/2}$), this yields only $\EE[|A| + |B|] \ge 2\sqrt{2}(1 - 2^{-s}) = \Omega(1)$, compared with the tight cocycle bound $2^{\lfloor s/2 \rfloor} + 2^{\lceil s/2 \rceil} = \Theta(2^{t/2})$ of Theorem~\ref{thm:optimal-covers}(b).
+\end{remark}
+
+\section{Formal Verification in Lean 4}
+\label{sec:lean}
+
+To certify the bitwise carry identities, inductive biclique classifications, non-equivariant star-blowup partitions, finite grid enumerations, and arbitrary-field rank proofs with zero unverified cases, the mathematical results of Sections~\ref{sec:intro}--\ref{sec:fourier} and Appendix~\ref{app:s3-cert} have been formalized in Lean~4 (\texttt{v4.36.0}) against Mathlib (\texttt{v4.36.0}) in the \texttt{CarryAutomaton} library (\texttt{Defs.lean}, \texttt{CoreBicliques.lean}, \texttt{CyclicCutAndLocalCover.lean}, \texttt{NegacyclicSpectrum.lean}, and \texttt{FocusedExtensions.lean}). Every module compiles with zero \texttt{sorry} declarations, zero \texttt{native\_decide} tactics, and zero custom axioms beyond Lean's standard foundational axioms (\texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}); in particular, the finite $s = 3$ tiling certificate of Appendix~\ref{app:s3-cert} is evaluated inside Lean's kernel via \texttt{decide}.
+
+In the Lean library, the relation $M_t$ and matrix $M_t$ are named \texttt{M\_rel} and \texttt{M\_mat}, while the borrow-core relation and matrix denoted $C_t$ ($s = t - 1$) in this paper are named \texttt{K\_coreRel s} and \texttt{K\_coreMat R s} (with cyclic carry-cut partitions $\mathcal{P}_m$ named \texttt{mechanismIICStar}). Exact biclique covers (\texttt{ExactBicliqueCover}) quantify over arbitrary finite index types allowing unrestricted overlaps. Table~\ref{tab:lean-map} records the correspondence between paper statements and Lean~4 declarations.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Correspondence between paper results and formalized declarations in the Lean~4 library \texttt{CarryAutomaton} (\texttt{v4.36.0}).}
+  \label{tab:lean-map}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \resizebox{\ifdim\width>\textwidth\textwidth\else\width\fi}{!}{%
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Paper Reference & Lean~4 Module & Formalized Declaration(s) \\
+    \midrule
+    Eq.~\eqref{eq:obstruction-2x2} ($t \ge 2$ single-valued obstruction) & \texttt{CoreBicliques.lean} & \texttt{M\_rel\_two\_by\_two\_obstruction}, \texttt{M\_rel\_no\_single\_valued} \\
+    Theorem~\ref{thm:factorization-bicliques}(a)--(c) ($M_t \cong I_2 \otimes C_t \otimes J_2$, $(2X{+}2Y)^s$) & \texttt{CoreBicliques.lean} & \texttt{M\_rel\_core\_factorization}, \texttt{maxCocyclePairs\_shape\_gf} \\
+    Lemma~\ref{lem:mod-quotient}, Def.~\ref{def:cyclic-cut}, Thm.~\ref{thm:optimal-covers}(a) ($\mathcal{P}_m$ partition) & \texttt{CyclicCutAndLocalCover.lean} & \texttt{modular\_quotient\_carry\_identity}, \texttt{mechanismIICStar\_isPartition} \\
+    Theorem~\ref{thm:optimal-covers}(b) ($\bc$, product \& real-weighted bounds, iff) & \texttt{FocusedExtensions.lean} & \texttt{bc\_M\_eq\_iff}, \texttt{prod\_load\_M\_eq\_iff}, \texttt{weighted\_sum\_M\_lower\_real}, \\
+     & & \texttt{weighted\_sum\_M\_attained\_real} \\
+    Lemma~\ref{lem:abstract-star-blowup} (abstract balanced $4$-star blowup) & \texttt{FocusedExtensions.lean} & \texttt{abstract\_balanced\_star\_blowup} \\
+    Theorem~\ref{thm:local-cover} ($\lbc = \lbp$ for $C_t$ and $M_t$) & \texttt{CyclicCutAndLocalCover.lean} & \texttt{exists\_optimal\_local\_partition\_K}, \texttt{exists\_optimal\_local\_partition\_M} \\
+    Proposition~\ref{prop:s3-obstruction} \& Prop.~\ref{prop:enum-s3} ($s = 3$ obstruction) & \texttt{CyclicCutAndLocalCover.lean} & \texttt{no\_equivariant\_cover\_K4\_load\_le\_3}, \texttt{prop\_A1\_s3\_grid\_obstruction} \\
+    Eq.~\eqref{eq:group-circulant} (abelian group-circulant invariance) & \texttt{FocusedExtensions.lean} & \texttt{M\_rel\_group\_circulant}, \texttt{K\_coreRel\_group\_circulant} \\
+    Theorem~\ref{thm:walsh-spectrum}(a) ($D\widetilde{H}_\alpha D = G_\alpha(T)$ over $\ZZ$) & \texttt{NegacyclicSpectrum.lean} & \texttt{walsh\_conj\_K\_coreMat}, \texttt{D\_sign\_conj\_Htilde\_eq\_G\_alpha\_int} \\
+    Theorem~\ref{thm:walsh-spectrum}(b) (exact rank, $\operatorname{char} F \neq 2$ \& $\operatorname{char} F = 2$) & \texttt{FocusedExtensions.lean} & \texttt{rank\_K\_coreMat\_char\_ne\_two}, \texttt{rank\_K\_coreMat\_char\_two}, \\
+     & & \texttt{rank\_M\_mat\_char\_ne\_two}, \texttt{rank\_M\_mat\_char\_two} \\
+    Theorem~\ref{thm:walsh-spectrum}(c) (envelope iff, $\Lambda(C_t) = 2^{t-3/2}$) & \texttt{NegacyclicSpectrum.lean} & \texttt{spectralNorm2\_H\_alpha\_eq\_envelope\_iff}, \texttt{centeredSpectralGap\_K\_core} \\
+    Proposition~\ref{prop:corollaries}(c) ($\DISJ_s$, zero-cover, margin $S$) & \texttt{FocusedExtensions.lean} & \texttt{disj\_embedded\_in\_K\_coreRel}, \texttt{zero\_cover\_K\_coreRel\_card\_le\_eight\_s}, \\
+     & & \texttt{margin\_witness\_K\_coreRel} \\
+    Remark~\ref{rem:spectral-cover} (centered spectral cover bound) & \texttt{NegacyclicSpectrum.lean} & \texttt{centered\_spectral\_biclique\_cover\_div\_le} \\
+    \bottomrule
+  \end{tabular}%
+  }
+\end{table}
+
+\noindent\emph{Scope disclosure.} All algebraic, combinatorial, spectral, and rank theorems in Sections~\ref{sec:intro}--\ref{sec:fourier} and Appendix~\ref{app:s3-cert} are proved in \texttt{CarryAutomaton}, with three explicit analytical/model boundaries: (i)~in Theorem~\ref{thm:optimal-covers}(b), \texttt{bc\_M\_eq\_iff} and \texttt{prod\_load\_M\_eq\_iff} are full iff characterizations and \texttt{weighted\_sum\_M\_lower\_real} / \texttt{weighted\_sum\_M\_attained\_real} formalize the universal real-weighted lower bound and attainment, while the equality-case structure for general real weights $(\alpha, \beta)$ is derived analytically in Section~\ref{sec:core-partitions}; (ii)~in Proposition~\ref{prop:corollaries}(a)--(c), the exact ranks, singular spectrum, $\DISJ_s$ submatrix embedding (\texttt{disj\_embedded\_in\_K\_coreRel}), $\le 8s$ all-zeros cover (\texttt{zero\_cover\_K\_coreRel\_card\_le\_eight\_s}), and $\ell_1$-weighted rectangle margin witness (\texttt{margin\_witness\_K\_coreRel}) are formalized in Lean, while the communication-complexity, $\gamma_2$-norm, and discrepancy deductions (invoking Razborov~\cite{Raz92} and Aaronson--Ambainis~\cite{AA05} on $\DISJ_s$) follow analytically in Section~\ref{sec:fourier}; and (iii)~the $O(1)$ word-RAM remark in Theorem~\ref{thm:optimal-covers}(a) interprets the formalized \texttt{BitVec} operations (\texttt{aliceBorrowMask\_testBit}, \texttt{omegaMaskBV\_getLsbD}) in the standard unit-cost word-RAM model.
+
+\appendix
+
+\section{Finite Certificate for the \texorpdfstring{$s = 3$}{s = 3} Equivariant Obstruction}
+\label{app:s3-cert}
+
+To make Proposition~\ref{prop:s3-obstruction} self-contained alongside its Lean~4 kernel proof (\texttt{prop\_A1\_s3\_grid\_obstruction}), we record the canonical exact-cover procedure and complete tiling count on $\Omega := \{0, \dots, 7\}^2$. Order $\Omega$ by cell index $p(w, z) := 8w + z \in \{0, \dots, 63\}$, encode each nonempty rectangle $R = W \times Z \subseteq \Omega$ by $\mathrm{mask}(R) := \sum_{(w,z) \in R} 2^{8w + z}$, and bucket eligible rectangles $\mathcal{R}$ by minimum cell $\mathcal{B}[p] := \{R \in \mathcal{R} : v_2(\mathrm{mask}(R)) = p\}$. Starting from covered mask $C = 0$, recursively set $p^* := v_2((2^{64} - 1) \oplus C)$ (the least uncovered cell) and branch over all $R \in \mathcal{B}[p^*]$ with $\mathrm{mask}(R) \land C = 0$ until $C = 2^{64} - 1$. Because every disjoint partition of $\Omega$ contains a unique rectangle covering $p^*$ whose minimum cell equals $p^*$, this search visits every unordered disjoint partition of $\Omega$ from $\mathcal{R}$ exactly once.
+
+\begin{proposition}[Certificate for the $s = 3$ Grid Obstruction]
+  \label{prop:enum-s3}
+  Let $\mathcal{R}_{s=3}$ be the set of all rectangles $W \times Z \subseteq \{0, \dots, 7\}^2$ with $(|W|, |Z|) \in \{(2, 4), (4, 2)\}$ satisfying~\eqref{eq:cocycle}. Among the $2\binom{8}{2}\binom{8}{4} = 3{,}920$ candidate pairs, $|\mathcal{R}_{s=3}| = 48$ ($24$ of shape $(2, 4)$ and $24$ of shape $(4, 2)$), admitting exactly $50$ disjoint $8$-rectangle tilings of $\{0, \dots, 7\}^2$ distributed as in Table~\ref{tab:s3-tilings}; all $50$ tilings have $\max(\max_w \deg(w), \max_z \deg(z)) = 4$.
+\end{proposition}
+
+\begin{table}[ht]
+  \centering
+  \caption{Distribution of all $50$ disjoint cocycle-valid $(2, 4)/(4, 2)$ tilings of $\{0, \dots, 7\}^2$ ($s = 3$) by count $a$ of $(2, 4)$ rectangles ($8 - a$ of shape $(4, 2)$).}
+  \label{tab:s3-tilings}
+  \footnotesize
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    Count $a$ of $(2, 4)$ rectangles & $0$ & $2$ & $4$ & $6$ & $8$ & Total \\
+    \midrule
+    Disjoint tilings of $\{0, \dots, 7\}^2$ & $5$ & $12$ & $16$ & $12$ & $5$ & $50$ \\
+    Tilings with $\max(\max_w \deg, \max_z \deg) \le 3$ & $0$ & $0$ & $0$ & $0$ & $0$ & $0$ \\
+    Tilings with $\max(\max_w \deg, \max_z \deg) = 4$ & $5$ & $12$ & $16$ & $12$ & $5$ & $50$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{thebibliography}{99}
+
+\bibitem{AA05} S.~Aaronson and A.~Ambainis, \emph{Quantum search of spatial regions}, Theory Comput.\ \textbf{1} (2005), 47--79.
+
+\bibitem{BKR11} A.~Bogdanov, D.~Khovratovich, and C.~Rechberger, \emph{Biclique cryptanalysis of the full AES}, in ASIACRYPT 2011, Lecture Notes in Comput.\ Sci., vol.~7073, Springer, Berlin, 2011, pp.~344--371.
+
+\bibitem{CNPV13} A.~Canteaut, M.~Naya-Plasencia, and B.~Vayssi\`ere, \emph{Sieve-in-the-middle: Improved MITM attacks}, in CRYPTO 2013, Part~I, Lecture Notes in Comput.\ Sci., vol.~8042, Springer, Berlin, 2013, pp.~222--240.
+
+\bibitem{CILS17} D.~Chistikov, S.~Iv\'an, A.~Lubiw, and J.~Shallit, \emph{Fractional coverings, greedy coverings, and rectifier networks}, in Proc.\ 34th STACS (2017), LIPIcs, vol.~66, Schloss Dagstuhl, 2017, pp.~23:1--23:14.
+
+\bibitem{ILNS14} S.~Iv\'an, \'A.~D.~Lelkes, J.~Nagy-Gy\"orgy, B.~Sz\"or\'enyi, and G.~Tur\'an, \emph{Biclique coverings, rectifier networks and the cost of $\varepsilon$-removal}, in DCFS 2014, Lecture Notes in Comput.\ Sci., vol.~8614, Springer, 2014, pp.~174--185.
+
+\bibitem{Juk12} S.~Jukna, \emph{Boolean Function Complexity: Advances and Frontiers}, Algorithms and Combinatorics, vol.~27, Springer, Berlin, 2012.
+
+\bibitem{KN97} E.~Kushilevitz and N.~Nisan, \emph{Communication Complexity}, Cambridge Univ.\ Press, Cambridge, 1997.
+
+\bibitem{LS09} N.~Linial and A.~Shraibman, \emph{Lower bounds in communication complexity based on factorization norms}, Random Structures Algorithms \textbf{34} (2009), no.~3, 368--394.
+
+\bibitem{LM01} H.~Lipmaa and S.~Moriai, \emph{Efficient algorithms for computing differential properties of addition}, in FSE 2001, Lecture Notes in Comput.\ Sci., vol.~2355, Springer, Berlin, 2002, pp.~336--350.
+
+\bibitem{LWD04} H.~Lipmaa, J.~Wall\'en, and P.~Dumas, \emph{On the additive differential probability of exclusive-or}, in FSE 2004, Lecture Notes in Comput.\ Sci., vol.~3017, Springer, Berlin, 2004, pp.~317--331.
+
+\bibitem{MVDP10} N.~Mouha, V.~Velichkov, C.~De~Canni\`ere, and B.~Preneel, \emph{The differential analysis of S-functions}, in SAC 2010, Lecture Notes in Comput.\ Sci., vol.~6544, Springer, Berlin, 2011, pp.~36--56.
+
+\bibitem{NP11} M.~Naya-Plasencia, \emph{How to improve rebound attacks}, in CRYPTO 2011, Lecture Notes in Comput.\ Sci., vol.~6841, Springer, Berlin, 2011, pp.~188--205.
+
+\bibitem{Pin14} T.~Pinto, \emph{Biclique covers and partitions}, Electron.\ J.\ Combin.\ \textbf{21} (2014), no.~1, Paper~P1.19, 12~pp.
+
+\bibitem{Raz92} A.~A.~Razborov, \emph{On the distributional complexity of disjointness}, Theoret.\ Comput.\ Sci.\ \textbf{106} (1992), no.~2, 385--390.
+
+\bibitem{SG13} E.~Schulte-Geers, \emph{On CCZ-equivalence of addition mod $2^n$}, Des.\ Codes Cryptogr.\ \textbf{66} (2013), no.~1--3, 111--127.
+
+\bibitem{Wal03} J.~Wall\'en, \emph{Linear approximations of addition modulo $2^n$}, in FSE 2003, Lecture Notes in Comput.\ Sci., vol.~2887, Springer, Berlin, 2003, pp.~261--273.
+
+\bibitem{Wal03b} J.~Wall\'en, \emph{On the Differential and Linear Properties of Addition}, Research Report HUT-TCS-A84, Helsinki Univ.\ of Technology, Espoo, December 2003.
+
+\end{thebibliography}
+
+\end{document}

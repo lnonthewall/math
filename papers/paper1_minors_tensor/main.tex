@@ -1,0 +1,477 @@
+\documentclass[11pt,reqno]{amsart}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,array,graphicx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hypertexnames=false]{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\numberwithin{equation}{section}
+
+\newcommand{\FF}{\mathbb{F}}
+\newcommand{\KK}{\mathbb{K}}
+\newcommand{\LL}{\mathbb{L}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\cO}{\mathcal{O}}
+
+\DeclareMathOperator{\rk}{rank}
+\DeclareMathOperator{\brk}{\underline{rank}}
+\DeclareMathOperator{\Sym}{Sym}
+\DeclareMathOperator{\Mat}{Mat}
+\DeclareMathOperator{\End}{End}
+\DeclareMathOperator{\Hom}{Hom}
+\DeclareMathOperator{\GL}{GL}
+\DeclareMathOperator{\PGL}{PGL}
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\spn}{span}
+\DeclareMathOperator{\chr}{char}
+
+\title[Rank Dichotomy of the $2 \times 3$ Maximal-Minors Tensor]{Arithmetic Rank Dichotomy of the $2 \times 3$ Maximal-Minors Tensor and Shared-Input Cross Products}
+\author{Gemini \and Opus \and GPT Pro}
+\date{November 2026}
+
+\subjclass[2020]{Primary 15A69, 14N07; Secondary 68Q17, 14H52.}
+\keywords{Tensor rank, border rank, simultaneous Waring rank, maximal minors, Segre threefold, Koszul flattenings, Hesse configuration, equiangular frames, complete elliptic curve addition.}
+
+\begin{document}
+
+\begin{abstract}
+Let $\KK$ be an arbitrary field with $\chr\KK \neq 2$. For $m \ge 1$, let $T_m := I_m \otimes_{1,2} \varepsilon_3 = \varepsilon_3 \boxtimes \langle 1, m, 1 \rangle \in (\KK^m \otimes \KK^3) \otimes (\KK^m \otimes \KK^3) \otimes \KK^3$ denote the tensor of $m$ three-dimensional cross products sharing one input, equivalently multiplication of a $3 \times 3$ skew-symmetric matrix by a general $3 \times m$ matrix. For $m = 2$, its $(1,2)$-symmetric skew-double $\widetilde{T}_2 \in \Sym^2(\KK^6) \otimes \KK^3$ is the polarized tensor of the three $2 \times 2$ maximal minors of a generic $2 \times 3$ matrix (the net of quadrics cutting out the Segre threefold $\PP^1 \times \PP^2 \subset \PP^5$). We prove that over every field $\KK$ with $\chr\KK \neq 2$ (including characteristic $3$), the formal border rank satisfies $\brk_{\KK}(T_2) = \brk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) = \brk_{\overline{\KK}}(T_2) = 9$, whereas $\rk_{\KK}(T_2) = \rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) = 9$ if $\KK$ contains a primitive cube root of unity and $10$ otherwise. In particular, $\rk_{\KK}(T_2) = 10 > 9 = \brk_{\KK}(T_2)$ holds over $\QQ$, $\RR$, $\FF_p$ ($p \equiv 2 \pmod 3$), and every field of characteristic $3$ (even $\overline{\FF}_3$). The rank-$9$ obstruction saturates the $18 \times 18$ Koszul flattening with zero slack, immediately ruling out $\chr\KK = 3$ and, for $\chr\KK \neq 2, 3$, producing nine rank-$1$ idempotents in $\Mat_3(\KK)$ with equiangular trace Gram matrix $\frac{3}{4}I_9 + \frac{1}{4}J_9$ against the trace-form discriminant $-1$ to force $-3 \in (\KK^\times)^2$. For all $m \ge 1$, we establish $\brk_{\KK}(T_m) = \lceil 9m/2 \rceil$, attained by $\rk_{\KK}(T_m)$ whenever $\KK$ has a primitive cube root of unity, whereas combining $\brk_{\KK}(T_3) = 14$ with the $14$-product $\ZZ[1/2]$ scheme of Khoruzhii, Gel\ss, and Pokutta shows that the arithmetic obstruction vanishes at $m = 3$. Finally, the complete projective Renes--Costello--Batina addition tensor on any $j = 0$ elliptic curve ($\chr\KK \neq 2, 3$) is $(1,2)$-congruent over $\KK$ to $\widetilde{T}_2$. The main algebraic results are machine-checked in Lean~4.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction and Main Results}\label{sec:intro}
+
+Let $\KK$ be a field with $\chr\KK \neq 2$. Write $\varepsilon_3 \in \KK^3 \otimes \KK^3 \otimes \KK^3$ for the $3 \times 3 \times 3$ Levi-Civita cross-product tensor with slices $(E_k)_{ij} = \varepsilon_{ijk}$ ($i, j, k \in \{0, 1, 2\}$, $\varepsilon_{012} = +1$). For each integer $m \ge 1$, define the mode-shared cross-product tensor
+\begin{equation}\label{eq:Tm-def}
+  T_m \;:=\; I_m \otimes_{1,2} \varepsilon_3 \;=\; \varepsilon_3 \boxtimes \langle 1, m, 1 \rangle \;\in\; (\KK^m \otimes \KK^3) \otimes (\KK^m \otimes \KK^3) \otimes \KK^3,
+\end{equation}
+whose slices are $I_m \otimes E_k$ ($k = 0, 1, 2$), where $\boxtimes$ denotes the tensor Kronecker product and $\langle 1, m, 1 \rangle = \sum_{a=1}^m e_a \otimes e_a \otimes 1 \in \KK^m \otimes \KK^m \otimes \KK^1$ is the inner-product tensor of rank $m$. Up to factor permutation, $T_m$ evaluates $m$ simultaneous cross products $z \times b^{(a)}$ ($1 \le a \le m$) sharing a common vector $z \in \KK^3$; equivalently, identifying $\mathfrak{so}_3(\KK) := \{A \in \Mat_3(\KK) : A^T = -A\}$ with $\KK^3$ via $A = \sum_{k=0}^2 z_k E_k$, the trilinear form $\Tr(C^T A B) = \sum_{a=1}^m \sum_{i,j,k=0}^2 \varepsilon_{ijk}\, c_i^{(a)} b_j^{(a)} z_k$ of multiplying a $3 \times 3$ skew-symmetric matrix $A$ by a general $3 \times m$ matrix $B = (b^{(1)} \mid \dots \mid b^{(m)})$ coincides coordinatewise with $T_m$.
+
+At $m = 2$, let $\widetilde{T}_2 \in \Sym^2(\KK^6) \otimes \KK^3$ denote the $(1,2)$-symmetric skew-double with slices $\widetilde{M}_k := \bigl(\begin{smallmatrix} 0 & E_k \\ -E_k & 0 \end{smallmatrix}\bigr)$ ($k = 0, 1, 2$), and more generally set $\widetilde{T}_{2k} := I_k \otimes_{1,2} \widetilde{T}_2 \in \Sym^2(\KK^{6k}) \otimes \KK^3$. Left-multiplying mode $1$ by $\bigl(\begin{smallmatrix} 0 & -I_3 \\ I_3 & 0 \end{smallmatrix}\bigr) \in \GL_6(\ZZ)$ identifies $\widetilde{T}_2 \cong_{\KK} T_2$. Writing $z = (\mathbf{u}, \mathbf{v}) \in \KK^3 \oplus \KK^3 \cong \KK^6$ for the rows of a generic $2 \times 3$ matrix $M = \bigl(\begin{smallmatrix} u_0 & u_1 & u_2 \\ v_0 & v_1 & v_2 \end{smallmatrix}\bigr)$, one has
+\begin{equation}\label{eq:minors-polarization}
+  \frac{1}{2}\,\widetilde{T}_2\bigl((\mathbf{u}, \mathbf{v}),\, (\mathbf{u}, \mathbf{v})\bigr)
+  \;=\; \mathbf{u} \times \mathbf{v}
+  \;=\; (u_1 v_2 - u_2 v_1,\, u_2 v_0 - u_0 v_2,\, u_0 v_1 - u_1 v_0),
+\end{equation}
+the vector of $2 \times 2$ maximal minors of $M$---geometrically, the net of quadrics cutting out the Segre threefold $\PP^1 \times \PP^2 \subset \PP^5$. By polarization in characteristic $\neq 2$, the $(1,2)$-symmetric rank $\rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2)$ equals the simultaneous Waring rank~\cite{Teitler2014} of these three maximal minors over $\KK$. Precise definitions of $\rk_{\KK}$, $\rk_{\KK}^{\mathrm{sym}_{1,2}}$, and formal algebraic border rank $\brk_{\KK}$ over $\KK[\varepsilon, \varepsilon^{-1}]$ are reviewed in Section~\ref{sec:prelim}.
+
+\begin{theorem}[All-Characteristic $\chr\KK \neq 2$ Dichotomy for $T_2$ and the $2 \times 3$ Minors Net]\label{thm:main-dichotomy}
+Let $\KK$ be any field with $\chr\KK \neq 2$. Then $T_2 \cong_{\KK} \widetilde{T}_2$, and:
+\begin{enumerate}[label=\textup{(\arabic*)},leftmargin=2em]
+  \item \textbf{Universal formal border rank $9$:}
+  \begin{equation}\label{eq:T2-border-rank}
+    \brk_{\KK}(T_2) \;=\; \brk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) \;=\; \brk_{\overline{\KK}}(T_2) \;=\; 9.
+  \end{equation}
+  \item \textbf{Cube-root-of-unity rank dichotomy:}
+  \begin{equation}\label{eq:T2-rank-dichotomy}
+    \rk_{\KK}(T_2) \;=\; \rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) \;=\;
+    \begin{cases}
+      9 & \text{if } \KK \text{ contains a primitive cube root of unity } (\exists\,\omega \in \KK\setminus\{1\},\; \omega^2+\omega+1=0), \\[3pt]
+      10 & \text{otherwise.}
+    \end{cases}
+  \end{equation}
+\end{enumerate}
+For $\chr\KK \neq 2, 3$, existence of $\omega \in \KK\setminus\{1\}$ with $\omega^2 + \omega + 1 = 0$ is equivalent to $-3 \in (\KK^\times)^2$, giving rank $9$ over $\FF_p$ ($p \ge 5$) if and only if $p \equiv 1 \pmod 3$, rank $10$ if and only if $p \equiv 2 \pmod 3$, rank $10$ over $\QQ$ and $\RR$, and rank $9$ over $\CC$ and $\overline{\FF}_p$. In characteristic $3$, $X^2 + X + 1 = (X - 1)^2$ admits no root $\omega \neq 1$ in any extension, so $\rk_{\KK}(T_2) = \rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) = 10 > 9 = \brk_{\KK}(T_2)$ holds over every field of characteristic $3$ (including $\overline{\FF}_3$).
+\end{theorem}
+
+Embedding $T_2$ into the full shared-input hierarchy $\{T_m\}_{m \ge 1}$ reveals that its formal border rank scales as $\lceil 9m/2 \rceil$ for all $m \ge 1$, while the cyclotomic obstruction at $m = 2$ disappears at $m = 3$.
+
+\begin{theorem}[General-$m$ Hierarchy and Disappearance of the Obstruction at $m = 3$]\label{thm:hierarchy}
+Let $\KK$ be any field with $\chr\KK \neq 2$, and let $m \ge 1$.
+\begin{enumerate}[label=\textup{(\arabic*)},leftmargin=2em]
+  \item \textbf{Exact formal border rank for all $m \ge 1$:} The $9m \times 9m$ Koszul flattening of $T_m$ has determinant $(-2)^m \neq 0$, and block direct sums of the $9$-term degeneration of $T_2$ with at most one $5$-term exact decomposition of $T_1 = \varepsilon_3$ establish
+  \begin{equation}\label{eq:Tm-border-rank}
+    \brk_{\KK}(T_m) \;=\; \brk_{\overline{\KK}}(T_m) \;=\; \left\lceil \frac{9m}{2} \right\rceil \qquad (\forall\, m \ge 1).
+  \end{equation}
+  In particular, at $m = 1$, $\rk_{\KK}(\varepsilon_3) = \brk_{\KK}(\varepsilon_3) = 5$ for every field $\KK$ with $\chr\KK \neq 2$.
+  \item \textbf{Exact split-field rank:} Whenever $\KK$ contains $\omega \in \KK\setminus\{1\}$ with $\omega^2 + \omega + 1 = 0$, $\rk_{\KK}(T_m) = \lceil 9m/2 \rceil$ for all $m \ge 1$, and $\rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_{2k}) = 9k$ for all $k \ge 1$.
+  \item \textbf{Comparison at $m = 3$:} Combining the lower bound $\brk_{\KK}(T_3) = 14$ from~\textup{(1)} with the explicit $14$-product $\ZZ[1/2]$ bilinear scheme of Khoruzhii, Gel\ss, and Pokutta~\cite{KGP2025} for $3 \times 3$ skew-symmetric-by-general matrix multiplication yields $\rk_{\KK}(T_3) = 14$ over every field $\KK$ with $\chr\KK \neq 2$ (and in particular over every field with $\chr\KK \neq 2, 3$, as well as $\QQ$, $\RR$, and $\FF_p$ for all odd primes $p$). Consequently, the cube-root-of-unity obstruction at $m = 2$ ($9$ vs.\ $10$) vanishes at $m = 3$, and block decompositions narrow the nonsplit ranks for $m = 4, 5, 6$ to $\{18, 19\}$, $\{23, 24\}$, and $\{27, 28\}$.
+\end{enumerate}
+\end{theorem}
+
+As a geometric application, $\widetilde{T}_2$ governs the algebraic coefficient tensor of complete projective point addition~\cite{BosmaLenstra1995,RCB2016} on elliptic curves of $j$-invariant zero.
+
+\begin{proposition}[Application to Complete Projective $j = 0$ Elliptic Addition and Complexified Pencil]\label{prop:rcb}
+Let $\KK$ be any field with $\chr\KK \neq 2, 3$ and $b \in \KK^\times$. On $E_b : Y^2 Z = X^3 + b Z^3 \subset \PP^2$, the bidegree-$(2,2)$ projective Renes--Costello--Batina addition tensor $T_{\mathrm{RCB}} = (M_X, M_Y, M_Z) \in \Sym^2(\KK^6) \otimes \KK^3$ of~\eqref{eq:rcb-formulas} is $(1,2)$-congruent over $\KK$ to $\widetilde{T}_2$ (eliminating the parameter $b$), and thus satisfies $\brk_{\KK}(T_{\mathrm{RCB}}) = \brk_{\KK}^{\mathrm{sym}_{1,2}}(T_{\mathrm{RCB}}) = 9$ and $\rk_{\KK}(T_{\mathrm{RCB}}) = \rk_{\KK}^{\mathrm{sym}_{1,2}}(T_{\mathrm{RCB}}) = 9$ if $-3 \in (\KK^\times)^2$ and $10$ otherwise. Moreover, when $-1 \notin (\KK^\times)^2$ (and over any extension $\LL/\KK$ containing $i$ with $i^2 = -1$), the complexified two-slice pencil $\Psi_{\mathrm{RCB}} := (M_X + i M_Y,\, M_Z)$ over $\KK(i)$ has Kronecker canonical form $L_1^{\oplus 2} \oplus (L_1^T)^{\oplus 2}$, exact rank $8$, and formal border rank $6$.
+\end{proposition}
+
+\subsection*{Context and organization}
+While field dependence of tensor rank and strict gaps between rank and border rank are classical phenomena~\cite{Bini1980,BCS1997,deSilvaLim2008,Landsberg2012,Strassen1973,Strassen1983}, explicit geometric tensors whose exact rank is governed across all characteristics $\neq 2$ by a sharp cyclotomic dichotomy remain rare. Viewed through~\eqref{eq:Tm-def}, the inequality $\rk_{\KK}(\varepsilon_3 \boxtimes \langle 1, 2, 1 \rangle) = 9 < 5 \cdot 2 = 10$ when $\mu_3^* \subset \KK$ (and $\rk_{\KK}(\varepsilon_3 \boxtimes \langle 1, 3, 1 \rangle) = 14 < 5 \cdot 3 = 15$ unconditionally for $\chr\KK \neq 2$) exhibits strict submultiplicativity of tensor rank under the Kronecker product~\cite{CJZ2018,CHL2023}. Over $\CC$, the Koszul lower bound $\brk_{\CC}(T_2) \ge 9$ follows from Strassen~\cite{Strassen1983} and Landsberg--Ottaviani~\cite{LandsbergOttaviani2013}, while $\brk_{\CC}(T_2) \le 9$ can be obtained by contracting Austin Conner's $\ZZ[1/6]$-degeneration of $\varepsilon_3 \boxtimes W$ recorded in Huang--Landsberg~\cite[Proposition~8.4]{HuangLandsberg2026}. Our $(1,2)$-symmetric degeneration has coefficients in $\ZZ[1/2][\varepsilon, \varepsilon^{-1}]$ and thus extends to characteristic $3$, while our rank-$9$ obstruction connects zero-slack Koszul idempotents to equiangular SIC-type trace frames~\cite{GIJM2022FFA,GIJM2022LAA,RBSC2004} and the Hesse configuration~\cite{ArtebaniDolgachev2009}. Section~\ref{sec:prelim} sets up ranks, formal border rank, and cyclotomic preliminaries; Section~\ref{sec:dichotomy} proves Theorem~\ref{thm:main-dichotomy} and exhibits non-Hesse equiangular trace frames; Section~\ref{sec:hierarchy} proves Theorem~\ref{thm:hierarchy}; Section~\ref{sec:rcb} proves Proposition~\ref{prop:rcb}; and Section~\ref{sec:lean} documents the Lean~4 formalization.
+
+\section{Preliminaries on Tensor Ranks and Formal Border Rank}\label{sec:prelim}
+
+Throughout Sections~\ref{sec:prelim}--\ref{sec:hierarchy}, $\KK$ denotes an arbitrary field with $\chr\KK \neq 2$, and $U, V, W$ denote finite-dimensional $\KK$-vector spaces.
+
+\begin{definition}[Tensor rank and $(1,2)$-symmetric rank]\label{def:ranks}
+For $T \in U \otimes V \otimes W$, the \emph{tensor rank} $\rk_{\KK}(T)$ is the least integer $r \ge 0$ for which $T = \sum_{m=1}^r u_m \otimes v_m \otimes w_m$ with $u_m \in U$, $v_m \in V$, $w_m \in W$. Two tensors $T, T'$ are \emph{$\GL$-equivalent} over $\KK$, written $T \cong_{\KK} T'$, if $T' = (g_1 \otimes g_2 \otimes g_3)(T)$ for linear isomorphisms $g_1, g_2, g_3$. When $U = V$ and $T \in \Sym^2(U) \otimes W$, the \emph{$(1,2)$-symmetric rank} $\rk_{\KK}^{\mathrm{sym}_{1,2}}(T)$ is the least $r \ge 0$ such that
+\begin{equation}\label{eq:sym12-def}
+  T \;=\; \sum_{m=1}^r u_m \otimes u_m \otimes w_m \qquad (u_m \in U,\; w_m \in W).
+\end{equation}
+Clearly $\rk_{\KK}(T) \le \rk_{\KK}^{\mathrm{sym}_{1,2}}(T)$, and $\rk_{\KK}^{\mathrm{sym}_{1,2}}(T)$ is invariant under \emph{$(1,2)$-congruence} $(g \otimes g \otimes h)(T)$ ($g \in \GL(U)$, $h \in \GL(W)$), written $T \cong_{\KK}^{\mathrm{sym}_{1,2}} T'$. Since $\chr\KK \neq 2$, polarizing $Q(x) := \frac{1}{2}T(x, x)$ on $U^*$ shows $Q(x) = \sum_{m=1}^r \ell_m(x)^2 (\frac{1}{2}w_m)$ if and only if $T = \sum_{m=1}^r \ell_m \otimes \ell_m \otimes w_m$ (absorbing scalars into $w_m$), identifying $\rk_{\KK}^{\mathrm{sym}_{1,2}}(T)$ with the simultaneous Waring rank of the components of $Q$.
+\end{definition}
+
+\begin{definition}[Formal algebraic border rank]\label{def:border-rank}
+Let $\varepsilon$ be an indeterminate over $\KK$. Following Bini~\cite{Bini1980} and B\"urgisser--Clausen--Shokrollahi~\cite[\S15.4]{BCS1997}, the \emph{formal border rank} $\brk_{\KK}(T)$ of $T \in U \otimes V \otimes W$ is the least $r \ge 0$ for which there exist $u_m(\varepsilon) \in U[\varepsilon, \varepsilon^{-1}]$, $v_m(\varepsilon) \in V[\varepsilon, \varepsilon^{-1}]$, $w_m(\varepsilon) \in W[\varepsilon, \varepsilon^{-1}]$ ($1 \le m \le r$) and $R(\varepsilon) \in (U \otimes V \otimes W)[\varepsilon]$ satisfying
+\begin{equation}\label{eq:border-rank-def}
+  \sum_{m=1}^r u_m(\varepsilon) \otimes v_m(\varepsilon) \otimes w_m(\varepsilon) \;=\; T + \varepsilon R(\varepsilon) \qquad \text{in } (U \otimes V \otimes W)[\varepsilon, \varepsilon^{-1}].
+\end{equation}
+For $T \in \Sym^2(U) \otimes W$, $\brk_{\KK}^{\mathrm{sym}_{1,2}}(T)$ imposes $u_m(\varepsilon) = v_m(\varepsilon)$ and $R(\varepsilon) \in (\Sym^2(U) \otimes W)[\varepsilon]$. Clearing negative powers of $\varepsilon$ on each factor (setting $d = 2a + c$ in the symmetric case with $\varepsilon^a u_m(\varepsilon) \in U[\varepsilon]$, $\varepsilon^c w_m(\varepsilon) \in W[\varepsilon]$) makes~\eqref{eq:border-rank-def} equivalent to $\sum_{m=1}^r \tilde{u}_m(\varepsilon) \otimes \tilde{v}_m(\varepsilon) \otimes \tilde{w}_m(\varepsilon) = \varepsilon^d T + \varepsilon^{d+1} R(\varepsilon)$ over $\KK[\varepsilon]$.
+\end{definition}
+
+\begin{remark}[Algebraic flattening bounds and finite fields]\label{rem:border-rank-props}
+(a) Suppose $\Phi : U \otimes V \otimes W \to \Hom_{\KK}(M_1, M_2)$ is a $\KK$-linear flattening such that $\rk_F\Phi_F(u \otimes v \otimes w) \le \kappa$ on every pure tensor over every extension $F/\KK$. If~\eqref{eq:border-rank-def} holds over $\KK[\varepsilon, \varepsilon^{-1}]$ and a $q \times q$ minor of $\Phi(T)$ equals $\delta \in \KK^\times$, then the corresponding minor of $\Phi(T) + \varepsilon\Phi(R(\varepsilon))$ lies in $\KK[\varepsilon]$ with constant term $\delta \neq 0$, hence is nonzero in $F := \KK(\varepsilon)$. Since $\Phi_F(T + \varepsilon R(\varepsilon))$ is a sum of $r$ matrices of rank $\le \kappa$, $q \le \kappa r$, proving $\brk_{\KK}^{\mathrm{sym}_{1,2}}(T) \ge \brk_{\KK}(T) \ge q/\kappa$ purely algebraically (and similarly over $\overline{\KK}$).
+
+(b) Over $\overline{\KK}$, $\brk_{\overline{\KK}}(T)$ agrees for $T \neq 0$ with geometric secant-variety border rank~\cite[Theorem~20.24]{BCS1997},~\cite{Landsberg2012}. Over a finite field $\FF_q$, however, the set of $\FF_q$-rational tensors of rank $\le r$ is finite and hence already Zariski-closed, so naive $\FF_q$-pointset closure collapses to $\rk_{\FF_q}(T)$; Definition~\ref{def:border-rank} avoids this collapse uniformly across all fields.
+\end{remark}
+
+Let $\{e_0, e_1, e_2\}$ be the standard basis of $V := \KK^3$, with bilinear pairing $x^T y = \sum_{i=0}^2 x_i y_i$ and cross product $(x \times y)_k = \sum_{i,j=0}^2 \varepsilon_{ijk} x_i y_j$, so $(E_k)_{ij} = \varepsilon_{ijk}$ gives
+\[
+  E_0 = \begin{pmatrix} 0 & 0 & 0 \\ 0 & 0 & 1 \\ 0 & -1 & 0 \end{pmatrix}, \qquad
+  E_1 = \begin{pmatrix} 0 & 0 & -1 \\ 0 & 0 & 0 \\ 1 & 0 & 0 \end{pmatrix}, \qquad
+  E_2 = \begin{pmatrix} 0 & 1 & 0 \\ -1 & 0 & 0 \\ 0 & 0 & 0 \end{pmatrix}.
+\]
+
+\begin{lemma}[Minors polarization and primitive cube roots of unity]\label{lem:minors-and-omega}
+Let $\KK$ be a field with $\chr\KK \neq 2$.
+\begin{enumerate}[label=\textup{(\arabic*)},leftmargin=2em]
+  \item Left-multiplying mode $1$ of $\widetilde{T}_2$ by $S := \bigl(\begin{smallmatrix} 0 & -I_3 \\ I_3 & 0 \end{smallmatrix}\bigr) \in \GL_6(\ZZ)$ yields $S \widetilde{M}_k = \bigl(\begin{smallmatrix} E_k & 0 \\ 0 & E_k \end{smallmatrix}\bigr) = I_2 \otimes E_k$, so $\widetilde{T}_2 \cong_{\KK} T_2$. For $z_a = (\mathbf{u}_a, \mathbf{v}_a) \in \KK^3 \oplus \KK^3$ ($a = 1, 2$), $\widetilde{T}_2(z_1, z_2) = \mathbf{u}_1 \times \mathbf{v}_2 + \mathbf{u}_2 \times \mathbf{v}_1$, establishing~\eqref{eq:minors-polarization}.
+  \item There exists $\omega \in \KK\setminus\{1\}$ with $\omega^2 + \omega + 1 = 0$ if and only if $\chr\KK \neq 3$ and $-3 \in (\KK^\times)^2$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Part~(1) is immediate from $E_k^T = -E_k$ and $\mathbf{u}^T E_k \mathbf{v} = (\mathbf{u} \times \mathbf{v})_k$. For~(2), if $\omega \in \KK\setminus\{1\}$ satisfies $\omega^2 + \omega + 1 = 0$, then $(\omega - 1)^2 = (\omega^2 + \omega + 1) - 3\omega = -3\omega$ is nonzero, forcing $3 \neq 0$ in $\KK$, and $(2\omega + 1)^2 = 4(\omega^2 + \omega + 1) - 3 = -3 \in (\KK^\times)^2$. Conversely, if $3 \neq 0$ and $s^2 = -3$ in $\KK$, then $\omega := (-1 + s)/2$ satisfies $\omega^2 + \omega + 1 = (s^2 + 3)/4 = 0$, and $\omega \neq 1$ because $\omega = 1$ implies $s = 3$ and hence $12 = s^2 + 3 = 0$, contradicting $\chr\KK \neq 2, 3$.
+\end{proof}
+
+\section{All-Characteristic Rank Dichotomy of \texorpdfstring{$T_2$}{T2} and \texorpdfstring{$\widetilde{T}_2$}{T2-tilde}}\label{sec:dichotomy}
+
+\subsection{Koszul Obstruction and Cyclotomic Dichotomy (Proof of Theorem~\ref{thm:main-dichotomy})}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main-dichotomy}]
+By Lemma~\ref{lem:minors-and-omega}(1), $\widetilde{T}_2 \cong_{\KK} T_2$, so $\rk_{\KK}(T_2) = \rk_{\KK}(\widetilde{T}_2) \le \rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2)$ and $\brk_{\KK}(T_2) = \brk_{\KK}(\widetilde{T}_2) \le \brk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2)$. We prove the theorem in five steps assuming only $\chr\KK \neq 2$.
+
+\medskip
+\noindent\textbf{Step 1: Koszul flattening determinant $(-2)^m$ for general $T_m$ ($m \ge 1$).}
+Let $E := \KK^m$ (standard basis $e_1, \dots, e_m$) and $V := \KK^3$ (standard basis $e_0, e_1, e_2$). Following Strassen~\cite{Strassen1983} and Landsberg--Ottaviani~\cite{LandsbergOttaviani2013}, associate to $X = \sum_r u_r \otimes v_r \otimes w_r \in (E \otimes V) \otimes (E \otimes V) \otimes V$ the $9m \times 9m$ Koszul flattening
+\begin{equation}\label{eq:koszul-def}
+  X_C^{\wedge 1} : (E \otimes V) \otimes V \longrightarrow (E \otimes V) \otimes V, \qquad
+  z \otimes c \longmapsto \sum_r (z^T u_r)\, v_r \otimes (w_r \times c).
+\end{equation}
+Over any extension field $F/\KK$, the image of $(u \otimes v \otimes w)_C^{\wedge 1}$ lies in $F v \otimes w^\perp$ (where $w^\perp := \{\beta \in F^3 : w^T \beta = 0\}$), which has dimension at most $2$ whenever $w \neq 0$ and $0$ when $w = 0$. Evaluating $(T_m)_C^{\wedge 1}$ on $(e_a \otimes e_i) \otimes e_l$ ($1 \le a \le m$, $i, l \in \{0, 1, 2\}$) via $\sum_{k=0}^2 \varepsilon_{ijk}\varepsilon_{klq} = \delta_{il}\delta_{jq} - \delta_{iq}\delta_{jl}$ yields
+\[
+  (T_m)_C^{\wedge 1}\bigl((e_a \otimes e_i) \otimes e_l\bigr)
+  \;=\; e_a \otimes \left(\delta_{il}\sum_{j=0}^2 e_j \otimes e_j - e_l \otimes e_i\right).
+\]
+Identifying $V \otimes V \xrightarrow{\sim} \Mat_3(\KK)$ via $x \otimes y \mapsto x y^T$, we have $(T_m)_C^{\wedge 1} = \mathrm{id}_E \otimes \Phi$, where
+\begin{equation}\label{eq:phi-def}
+  \Phi : \Mat_3(\KK) \longrightarrow \Mat_3(\KK), \qquad \Phi(A) \;=\; (\Tr A) I_3 - A^T.
+\end{equation}
+Over $\ZZ$, ordering the matrix units of $\Mat_3(\ZZ)$ into the diagonal block $\{E_{00}, E_{11}, E_{22}\}$ and the three transpose pairs $\{E_{01}, E_{10}\}$, $\{E_{02}, E_{20}\}$, $\{E_{12}, E_{21}\}$, $\Phi$ is block-diagonal with diagonal blocks $J_3 - I_3$ (of determinant $+2$) and three copies of $\bigl(\begin{smallmatrix} 0 & -1 \\ -1 & 0 \end{smallmatrix}\bigr)$ (each of determinant $-1$). Hence, in every characteristic,
+\begin{equation}\label{eq:det-koszul-m}
+  \det(\Phi) \;=\; 2(-1)^3 \;=\; -2, \qquad
+  \det\bigl((T_m)_C^{\wedge 1}\bigr) \;=\; (\det\Phi)^m \;=\; (-2)^m.
+\end{equation}
+Since $\chr\KK \neq 2$, $(-2)^m \in \KK^\times$, and over $\ZZ[1/2]$ one checks directly that
+\begin{equation}\label{eq:phi-inv}
+  \Phi^{-1}(B) \;=\; \frac{1}{2}(\Tr B) I_3 - B^T,
+\end{equation}
+since $\Phi(\Phi^{-1}(B)) = (\frac{3}{2} - 1 - \frac{1}{2})(\Tr B)I_3 + B = B$. Remark~\ref{rem:border-rank-props}(a) with $q = 9m$ and $\kappa = 2$ gives $\brk_{\KK}(T_m) \ge \brk_{\overline{\KK}}(T_m) \ge \lceil 9m/2 \rceil$ for all $m \ge 1$; at $m = 2$, $\brk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) \ge \brk_{\overline{\KK}}(T_2) \ge 9$.
+
+\medskip
+\noindent\textbf{Step 2: Symmetric border-rank-$9$ degeneration over $\ZZ[1/2][\varepsilon, \varepsilon^{-1}]$.}
+Write $(u_0, u_1, u_2, v_0, v_1, v_2)$ for the coordinate forms on $\KK^6 = \KK^3 \oplus \KK^3$, reading indices $j \in \ZZ/3\ZZ$. Set $(t_1, t_2, t_3) := (-1, 0, 1)$ and $(c_1, c_2, c_3) := (\frac{1}{2}, -1, \frac{1}{2}) \in \ZZ[1/2]^3$, so $\sum_{m=1}^3 c_m = \sum_{m=1}^3 c_m t_m = \sum_{m=1}^3 c_m t_m^3 = 0$ and $\sum_{m=1}^3 c_m t_m^2 = 1$. For $j \in \ZZ/3\ZZ$ and $m \in \{1, 2, 3\}$, define $L_{j,m}^{(\varepsilon)} := \varepsilon(t_m v_{j+1} + t_m^2 v_{j+2}) - \varepsilon^{-1} u_j \in (\KK^6)^*[\varepsilon, \varepsilon^{-1}]$ and
+\[
+  \widetilde{T}_2^{(\varepsilon)} \;:=\; \sum_{j \in \ZZ/3\ZZ} \sum_{m=1}^3 L_{j,m}^{(\varepsilon)} \otimes L_{j,m}^{(\varepsilon)} \otimes \bigl(c_m(e_{j+1} - t_m e_{j+2})\bigr).
+\]
+In powers of $\varepsilon$: the $\varepsilon^{-2}$-coefficient is $\sum_{j,m} c_m (u_j \otimes u_j) \otimes (e_{j+1} - t_m e_{j+2}) = 0$; odd powers $\varepsilon^{\pm 1}$ vanish; the $\varepsilon^0$-cross-sum $-\sum_{m=1}^3 c_m u_j \otimes (t_m v_{j+1} + t_m^2 v_{j+2}) \otimes (e_{j+1} - t_m e_{j+2}) = u_j \otimes v_{j+1} \otimes e_{j+2} - u_j \otimes v_{j+2} \otimes e_{j+1}$ sums over $j$ (together with its transpose) to $\widetilde{T}_2$; and the $\varepsilon^2$-term lies in $\varepsilon^2 \Sym^2(\KK^6) \otimes \KK^3$. Since only $\frac{1}{2}$ is used, $\brk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) \le 9$ holds over every field $\KK$ with $\chr\KK \neq 2$, proving~\eqref{eq:T2-border-rank}.
+
+\medskip
+\noindent\textbf{Step 3: Symmetric $9$-term Hesse decomposition when $\KK$ has a primitive cube root of unity.}
+Suppose $\omega \in \KK\setminus\{1\}$ satisfies $\omega^2 + \omega + 1 = 0$. By Lemma~\ref{lem:minors-and-omega}(2), $3 \in \KK^\times$, and $\sum_{\alpha \in \{1, \omega, \omega^2\}} \alpha^k$ equals $3$ if $3 \mid k$ and $0$ otherwise. For $j \in \ZZ/3\ZZ$ and $\alpha \in \{1, \omega, \omega^2\}$, set
+\begin{equation}\label{eq:hesse-forms}
+  L_{j, \alpha} \;:=\; \alpha(v_{j+1} + \alpha v_{j+2}) - u_j \;\in\; (\KK^6)^*, \qquad
+  c_{j, \alpha} \;:=\; e_{j+1} - \alpha e_{j+2} \;\in\; \KK^3,
+\end{equation}
+whose projective classes $[c_{j,\alpha}] \in \PP^2(\KK)$ are the nine inflection points of $x_0^3 + x_1^3 + x_2^3 = 0$. Expanding $\frac{1}{3}\sum_{j \in \ZZ/3\ZZ}\sum_{\alpha \in \{1, \omega, \omega^2\}} \alpha\, L_{j,\alpha} \otimes L_{j,\alpha} \otimes c_{j,\alpha}$: the $u_j \otimes u_j$ terms vanish via $\sum_\alpha \alpha = \sum_\alpha \alpha^2 = 0$; the $u_j \otimes v$ and $v \otimes u_j$ cross-terms retain only $\alpha^3 = 1$ and sum to $\widetilde{T}_2$; and for fixed $j$, the $v \otimes v$ sum equals $v_{j+1} \otimes v_{j+1} \otimes e_{j+1} - v_{j+2} \otimes v_{j+2} \otimes e_{j+2}$, which telescopes to $0$ over $j \in \ZZ/3\ZZ$. Thus $\rk_{\KK}(T_2) = \rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) = 9$ (giving the $9$-square formula $\mathbf{u} \times \mathbf{v} = \frac{1}{6}\sum_{j,\alpha} \alpha\, L_{j,\alpha}(\mathbf{u}, \mathbf{v})^2 c_{j,\alpha}$).
+
+\medskip
+\noindent\textbf{Step 4: Universal $5$-term $\varepsilon_3$ and $10$-term symmetric $\widetilde{T}_2$ decompositions over $\ZZ[1/2]$.}
+On $\KK^3$, set $R_1 = (e_1 + e_2)(e_1 - e_2)^T$, $R_2 = (e_1 - e_2)(e_1 + e_2)^T$, $R_3 = (e_2 + e_0)(e_2 - e_0)^T$, $R_4 = (e_2 - e_0)(e_2 + e_0)^T$, and $R_5 = (e_0 + e_1)(e_0 - e_1)^T$, written $R_t = a_t b_t^T$. Then $E_0 = \frac{1}{2}(R_2 - R_1)$, $E_1 = \frac{1}{2}(R_4 - R_3)$, and $E_2 = -\frac{1}{2}(R_1 + R_2 + R_3 + R_4) - R_5$, giving $\varepsilon_3 = \sum_{t=1}^5 a_t \otimes b_t \otimes w_t$ over $\ZZ[1/2]$. Polarizing each block $\bigl(\begin{smallmatrix} 0 & a_t b_t^T \\ b_t a_t^T & 0 \end{smallmatrix}\bigr) = \frac{1}{2}\binom{a_t}{b_t}(a_t^T\;\; b_t^T) - \frac{1}{2}\binom{a_t}{-b_t}(a_t^T\;\; -b_t^T)$ expresses $\widetilde{T}_2$ as a $(1,2)$-symmetric sum of $10$ terms over $\ZZ[1/2]$, so $\rk_{\KK}(T_2) \le \rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) \le 10$ for every field $\KK$ with $\chr\KK \neq 2$.
+
+\medskip
+\noindent\textbf{Step 5: All-characteristic obstruction ($\rk_{\KK}(T_2) \le 9 \implies \exists\,\omega \in \KK\setminus\{1\},\; \omega^2+\omega+1=0$).}
+Suppose $T_2 = \sum_{r=1}^9 u_r \otimes v_r \otimes w_r$ over $\KK$ ($\chr\KK \neq 2$). Write $u_r = (u_r^{(1)}, u_r^{(2)})$ as $U_r := (u_r^{(1)}\;\; u_r^{(2)}) \in \Mat_{3 \times 2}(\KK)$, $v_r$ as $V_r := (v_r^{(1)}\;\; v_r^{(2)})$, $G_{rs} := U_r V_s^T \in \Mat_3(\KK)$, and $M_{rs} := \frac{1}{2}G_{rs} - G_{rs}^T$.
+
+\emph{5.1. Zero-slack complementary idempotents.}
+Set $L_r := (u_r \otimes v_r \otimes w_r)_C^{\wedge 1}$ and $P_r := L_r ((T_2)_C^{\wedge 1})^{-1} \in \End_{\KK}(\KK^{18})$ via~\eqref{eq:phi-inv} (using only $2 \neq 0$). Since $\sum_{r=1}^9 P_r = I_{18}$ and $\rk(P_r) \le 2$, rank subadditivity forces $\dim(\im P_r) = 2$ for all $r$ and $\KK^{18} = \bigoplus_{r=1}^9 \im(P_r)$. Hence $u_r, v_r, w_r \neq 0$, $\im(P_r) = \KK v_r \otimes w_r^\perp$, and $P_r P_s = \delta_{rs} P_r$ (purely algebraic complementary idempotents; $(w_r^\perp)^\perp = \KK w_r$ holds even if $w_r^T w_r = 0$). For $\beta \in w_s^\perp$, $((T_2)_C^{\wedge 1})^{-1} = \mathrm{id}_{\KK^2} \otimes \Phi^{-1}$ maps $v_s \otimes \beta = \sum_{a=1}^2 e_a \otimes v_s^{(a)}\beta^T$ to $\sum_{a=1}^2 e_a \otimes A_a$ with $A_a = \frac{1}{2}(\beta^T v_s^{(a)})I_3 - \beta(v_s^{(a)})^T$; since $L_r(e_a \otimes x y^T) = v_r \otimes (w_r \times ((x y^T)^T u_r^{(a)}))$,
+\[
+  P_r(v_s \otimes \beta) \;=\; v_r \otimes \left(w_r \times \sum_{a=1}^2 A_a^T u_r^{(a)}\right) \;=\; v_r \otimes \bigl(w_r \times (M_{rs}\beta)\bigr),
+\]
+so $P_r P_s = \delta_{rs} P_r$ on $\im(P_s) = \KK v_s \otimes w_s^\perp$ is equivalent to
+\begin{align}
+  w_r \times (M_{rr}\beta) &= \beta \qquad (\forall\, \beta \in w_r^\perp), \label{eq:idemp-I}\\
+  \gamma^T G_{rs}\beta &= 2\,\beta^T G_{rs}\gamma \qquad (\forall\, r \neq s,\; \forall\, \beta \in w_s^\perp,\; \forall\, \gamma \in w_r^\perp). \label{eq:idemp-II}
+\end{align}
+
+\emph{5.2. Exclusion of $\chr\KK = 3$ and formula for $V_r$.}
+For $\beta \in w_r^\perp$, pairing~\eqref{eq:idemp-I} with $M_{rr}\beta$ gives $-\frac{1}{2}\beta^T G_{rr}\beta = \beta^T M_{rr}\beta = 0$. Since $2 \neq 0$, $G_{rr}$ is alternating on $w_r^\perp \times w_r^\perp$, whence $\beta_1^T M_{rr}\beta_2 = (3 \cdot 2^{-1})\beta_1^T G_{rr}\beta_2$ for all $\beta_1, \beta_2 \in w_r^\perp$. Crossing $\beta_1 \in w_r^\perp$ with~\eqref{eq:idemp-I} at $\beta_2 \in w_r^\perp$ and using $a \times (b \times c) = (a^T c)b - (a^T b)c$ with $\beta_1^T w_r = 0$ gives, still using only $2 \neq 0$,
+\begin{equation}\label{eq:diag-cross}
+  \beta_1 \times \beta_2 \;=\; \beta_1 \times \bigl(w_r \times (M_{rr}\beta_2)\bigr) \;=\; (3 \cdot 2^{-1})(\beta_1^T G_{rr}\beta_2)\, w_r.
+\end{equation}
+Choose a basis $\{p_0, p_1\}$ of the $2$-dimensional space $w_r^\perp$ and extend to a basis $\{p_0, p_1, p_2\}$ of $\KK^3$; then $p_2^T(p_0 \times p_1) = \det(p_2, p_0, p_1) \neq 0$, so $p_0 \times p_1 \neq 0$. If $\chr\KK = 3$, then $3 = 0$ in $\KK$ and the right-hand side of~\eqref{eq:diag-cross} vanishes at $(\beta_1, \beta_2) = (p_0, p_1)$, contradicting $p_0 \times p_1 \neq 0$. Therefore $\chr\KK \neq 3$ ($3 \in \KK^\times$), and $p_0^T G_{rr} p_1 = (U_r^T p_0)^T(V_r^T p_1) \neq 0$. Thus $U_r^T|_{w_r^\perp}, V_r^T|_{w_r^\perp} : w_r^\perp \to \KK^2$ are both linear isomorphisms, forcing $\nu_r := u_r^{(1)} \times u_r^{(2)} \neq 0$ and $\Delta_r := \nu_r^T w_r = \det(u_r^{(1)}, u_r^{(2)}, w_r) \neq 0$. Setting $\beta_1 := u_r^{(2)} \times w_r$ and $\beta_2 := w_r \times u_r^{(1)}$ gives $\beta_a^T u_r^{(a')} = \Delta_r \delta_{aa'}$ and $\beta_1 \times \beta_2 = \Delta_r w_r$; substituting into $\beta_a^T G_{rr}\beta_a = 0$ and $\frac{3}{2}\beta_1^T G_{rr}\beta_2 = \Delta_r$ yields $\beta_1^T v_r^{(1)} = \beta_2^T v_r^{(2)} = 0$, $\beta_2^T v_r^{(1)} = \frac{2}{3}$, and $\beta_1^T v_r^{(2)} = -\frac{2}{3}$, whence
+\begin{equation}\label{eq:Vr-formula}
+  V_r \;=\; \frac{2}{3\Delta_r}\, U_r J + w_r \boldsymbol{\lambda}_r^T, \qquad
+  J := \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}, \qquad \boldsymbol{\lambda}_r \in \KK^2.
+\end{equation}
+
+\emph{5.3. Off-diagonal equiangularity.}
+If $w_r \parallel w_s$ ($r \neq s$), iterating~\eqref{eq:idemp-II} on $w_r^\perp = w_s^\perp$ gives $3\,\gamma^T G_{rs}\beta = 0$, contradicting invertibility of $U_r^T|_{w_r^\perp}$, $J^T$, $U_s^T|_{w_s^\perp}$ in~\eqref{eq:Vr-formula}. Thus $[w_1], \dots, [w_9] \in \PP^2(\KK)$ are distinct. For $r \neq s$, set $\eta := w_r \times w_s \in (w_r^\perp \cap w_s^\perp)\setminus\{0\}$. At $\beta = \gamma = \eta$,~\eqref{eq:idemp-II} and~\eqref{eq:Vr-formula} give $(\eta^T U_r) J^T (U_s^T \eta) = 0$ with $U_r^T \eta, U_s^T \eta \neq 0$, so $U_s^T \eta = \kappa_{rs}\, U_r^T \eta$ for a unique $\kappa_{rs} \in \KK^\times$ ($\kappa_{sr} = \kappa_{rs}^{-1}$). Picking $\beta_0 \in w_s^\perp \setminus \KK\eta$ with $\eta \times \beta_0 = c w_s$ ($c \in \KK^\times$), Lagrange's identity gives $(\eta^T U) J^T (U^T \beta_0) = c(\nu_U^T w_s)$. Evaluating~\eqref{eq:idemp-II} at $(\gamma, \beta) = (\eta, \beta_0)$ kills $w_s \boldsymbol{\lambda}_s^T$ on both sides and leaves $\kappa_{rs}^{-1}(\nu_s^T w_s) = -2\kappa_{rs}(\nu_r^T w_s)$, so $\nu_r^T w_s \neq 0$ and $\kappa_{rs}^2 = -\frac{\nu_s^T w_s}{2\,\nu_r^T w_s}$. Multiplying by the swapped relation $\kappa_{sr}^2 = \kappa_{rs}^{-2}$ cancels $\kappa_{rs}^2$:
+\begin{equation}\label{eq:biorthogonal-quarter}
+  \frac{(\nu_r^T w_s)(\nu_s^T w_r)}{(\nu_r^T w_r)(\nu_s^T w_s)} \;=\; \frac{1}{4} \qquad (\forall\, 1 \le r \neq s \le 9).
+\end{equation}
+
+\emph{5.4. Trace-Gram discriminant on $\Mat_3(\KK)$.}
+The nine rank-$1$ idempotents $Q_r := \Delta_r^{-1} w_r \nu_r^T \in \Mat_3(\KK)$ have trace Gram matrix $(G_Q)_{rs} := \Tr(Q_r Q_s) = \frac{3}{4}\delta_{rs} + \frac{1}{4}$, i.e., $G_Q = \frac{3}{4}I_9 + \frac{1}{4}J_9$, with
+\begin{equation}\label{eq:det-GQ}
+  \det(G_Q) \;=\; \left(\frac{3}{4}\right)^8 \left(\frac{3}{4} + \frac{9}{4}\right) \;=\; 3 \cdot \left(\frac{81}{256}\right)^2 \;\neq\; 0.
+\end{equation}
+Thus $\{Q_1, \dots, Q_9\}$ is a basis of $\Mat_3(\KK)$. In the standard matrix-unit basis $\{E_{ij}\}$ of $\Mat_3(\KK)$, $\Tr(E_{ij} E_{kl}) = \delta_{jk}\delta_{il}$ has Gram matrix $G_{\mathrm{std}}$ fixing the three diagonal units and swapping the three transpose pairs, so $\det(G_{\mathrm{std}}) = (+1)^3(-1)^3 = -1$. If $C \in \GL_9(\KK)$ is the basis-change matrix from $\{E_{ij}\}$ to $\{Q_r\}$, congruence $G_Q = C^T G_{\mathrm{std}} C$ gives $3(81/256)^2 = -(\det C)^2$, whence $-3 = (\frac{256}{81}\det C)^2 \in (\KK^\times)^2$. Lemma~\ref{lem:minors-and-omega}(2) yields $\omega \in \KK\setminus\{1\}$ with $\omega^2 + \omega + 1 = 0$, completing the proof.
+\end{proof}
+
+\subsection{Equiangular Trace Frames vs.\ Hesse Uniqueness and Kronecker Submultiplicativity}
+
+Step~5 uses only Koszul saturation $P_r P_s = \delta_{rs} P_r$, which implies the SIC-type frame equations $\Tr(Q_r Q_s) = \frac{3}{4}\delta_{rs} + \frac{1}{4}$ and $\sum_{r=1}^9 Q_r = 3 I_3$ (since $\Tr((\sum_s Q_s - 3I_3)Q_r) = 1 + \frac{8}{4} - 3 = 0$ on the basis $\{Q_r\}$) without imposing full tensor reconstruction $\sum_r u_r \otimes v_r \otimes w_r = T_2$. The next proposition shows that these frame equations alone admit non-Hesse projective configurations.
+
+\begin{proposition}[Non-Hesse solutions of the equiangular trace-frame equations]\label{prop:non-hesse}
+Let $\KK$ be a field with $\chr\KK \neq 2$ containing $\omega \in \KK\setminus\{1\}$ with $\omega^2 + \omega + 1 = 0$ (so $\chr\KK \neq 3$). For any $a, b, c \in \KK^\times$ and $t \in \{0, 1, 2\}$, define $Q_{j,t} := x_{j,t} y_{j,t}^T \in \Mat_3(\KK)$ ($j \in \{0, 1, 2\}$) by
+\begin{align*}
+  x_{0,t} &= (0,\, 1,\, a\omega^t)^T, & y_{0,t} &= \bigl(0,\, \tfrac{1}{2},\, (2a)^{-1}\omega^{2t}\bigr)^T, \\
+  x_{1,t} &= (b\omega^t,\, 0,\, 1)^T, & y_{1,t} &= \bigl((2b)^{-1}\omega^{2t},\, 0,\, \tfrac{1}{2}\bigr)^T, \\
+  x_{2,t} &= (1,\, c\omega^t,\, 0)^T, & y_{2,t} &= \bigl(\tfrac{1}{2},\, (2c)^{-1}\omega^{2t},\, 0\bigr)^T.
+\end{align*}
+Then the nine matrices $Q_{j,t}$ are rank-$1$ idempotents satisfying $\Tr(Q_r Q_s) = \frac{3}{4}\delta_{rs} + \frac{1}{4}$ and $\sum_r Q_r = 3 I_3$, with $[x_{j,t}] \in \PP^2(\KK)$ pairwise distinct and $\det[x_{0,t}, x_{1,u}, x_{2,v}] = abc\,\omega^{t+u+v} + 1$. Consequently, when $(abc)^3 \neq -1$---in particular at $(a, b, c) = (2, 1, 1)$ over every such field $\KK$, since $2^3 + 1 = 9 \neq 0$---only the $3$ coordinate-line triples $\{x_{j,0}, x_{j,1}, x_{j,2}\}$ among all $\binom{9}{3} = 84$ triples are collinear (whereas $abc = -1$ realizes the $12$ collinear triples of a Hesse $(9_4, 12_3)$ configuration).
+\end{proposition}
+
+\begin{proof}
+For each $j, t$, $y_{j,t}^T x_{j,t} = \frac{1}{2} + \frac{1}{2}\omega^{3t} = 1$, so $Q_{j,t}^2 = Q_{j,t}$ and $\Tr(Q_{j,t}) = 1$. Within block $j$, $t \neq t'$ gives $\Tr(Q_{j,t} Q_{j,t'}) = \frac{1}{4}(1 + \omega^{t'-t})(1 + \omega^{t-t'}) = \frac{1}{4}(1 + \omega)(1 + \omega^2) = \frac{1}{4}$. Across blocks, $\Tr(Q_{0,t} Q_{1,u}) = (y_{1,u}^T x_{0,t})(y_{0,t}^T x_{1,u}) = (\frac{a}{2}\omega^t)((2a)^{-1}\omega^{2t}) = \frac{1}{4}\omega^{3t} = \frac{1}{4}$, and cyclic symmetry covers all pairs. Distinctness of $[x_{j,t}]$ and non-collinearity of $(2, 1, 0)$-triples follow from $\det[x_{0,t}, x_{0,t'}, x_{1,u}] = ab\omega^u(\omega^{t'} - \omega^t) \neq 0$ and $\det[x_{0,t}, x_{0,t'}, x_{2,v}] = a(\omega^{t'} - \omega^t) \neq 0$. Cofactor expansion gives $\det[x_{0,t}, x_{1,u}, x_{2,v}] = abc\,\omega^{t+u+v} + 1$, which vanishes for $3$ transversal triples per residue of $t + u + v \pmod 3$ when $abc = -1$, and never vanishes when $(abc)^3 \neq -1$.
+\end{proof}
+
+\begin{remark}[Kronecker submultiplicativity and Conner's degeneration]\label{rem:kronecker-conner}
+(1) Because $T_2 = \varepsilon_3 \boxtimes \langle 1, 2, 1 \rangle$ with $\rk_{\KK}(\varepsilon_3) = 5$ and $\rk_{\KK}(\langle 1, 2, 1 \rangle) = 2$, Theorem~\ref{thm:main-dichotomy} shows that Kronecker multiplicativity $\rk_{\KK}(T_2) = 5 \cdot 2 = 10$ holds when $\mu_3^* \not\subset \KK$ and fails strictly ($9 < 10$) when $\mu_3^* \subset \KK$ (cf.~\cite{CJZ2018,CHL2023}; note that $T_2$ shares mode $3$, so this is Kronecker submultiplicativity rather than a direct-sum phenomenon). Proposition~\ref{prop:non-hesse} explains why Koszul saturation suffices to obstruct rank $9$ via $\det(G_Q)$, whereas classifying rank-$9$ decompositions up to $\GL$-equivalence would require imposing the remaining cubic equations $\sum_r u_r \otimes v_r \otimes w_r = T_2$ beyond~\eqref{eq:idemp-I}--\eqref{eq:idemp-II}.
+
+(2) Over $\CC$, Huang and Landsberg~\cite[Proposition~8.4]{HuangLandsberg2026} present Austin Conner's border-rank-$9$ degeneration (over $\ZZ[1/6][\varepsilon, \varepsilon^{-1}]$) for $\varepsilon_3 \boxtimes W \in (\CC^3 \otimes \CC^2)^{\otimes 3}$, where $W = e_0 \otimes e_1 \otimes e_0 + e_1 \otimes e_0 \otimes e_0 + e_0 \otimes e_0 \otimes e_1$; contracting mode $3$ by $\mathrm{id}_{\CC^3} \otimes e_0^*$ projects $\varepsilon_3 \boxtimes W$ onto a tensor $\GL$-equivalent to $T_2$. Step~2 above instead constructs a $(1,2)$-symmetric degeneration of $\widetilde{T}_2$ directly over $\ZZ[1/2][\varepsilon, \varepsilon^{-1}]$, avoiding division by $3$ and thus establishing $\brk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_2) = 9$ in characteristic $3$ as well.
+\end{remark}
+
+\section{General-\texorpdfstring{$m$}{m} Hierarchy and Disappearance of the Obstruction at \texorpdfstring{$m = 3$}{m = 3}}\label{sec:hierarchy}
+
+\begin{proof}[Proof of Theorem~\ref{thm:hierarchy}]
+\emph{Part (1).} By Step~1 of Theorem~\ref{thm:main-dichotomy} (specifically~\eqref{eq:det-koszul-m} and Remark~\ref{rem:border-rank-props}(a)), $\det((T_m)_C^{\wedge 1}) = (-2)^m \in \KK^\times$ gives $\brk_{\KK}(T_m) \ge \brk_{\overline{\KK}}(T_m) \ge \lceil 9m/2 \rceil$ for every $m \ge 1$. Write $m = 2q + \delta$ with $q = \lfloor m/2 \rfloor$ and $\delta = m \bmod 2 \in \{0, 1\}$, decomposing $\KK^m \otimes \KK^3 = (\KK^2 \otimes \KK^3)^{\oplus q} \oplus (\KK^3)^{\oplus \delta}$ on modes $1$ and $2$ while sharing mode $3$. Summing $q$ block-disjoint copies of the $9$-term $\ZZ[1/2][\varepsilon, \varepsilon^{-1}]$ degeneration $S_1(\widetilde{T}_2^{(\varepsilon)})$ of $T_2$ (Step~2) with $\delta$ copy of the exact $5$-term $\ZZ[1/2]$ decomposition of $T_1 = \varepsilon_3$ (Step~4) expresses $T_m + \varepsilon R(\varepsilon)$ using $9q + 5\delta = \lceil 9m/2 \rceil$ rank-$1$ Laurent terms, proving~\eqref{eq:Tm-border-rank}. At $m = 1$, $5 \le \brk_{\KK}(\varepsilon_3) \le \rk_{\KK}(\varepsilon_3) \le 5$.
+
+\emph{Part (2).} When $\omega \in \KK\setminus\{1\}$ satisfies $\omega^2 + \omega + 1 = 0$, replacing the $q$ degenerations of $T_2$ in Part~(1) by $q$ block-disjoint copies of the exact $9$-term Hesse decomposition $S_1(\widetilde{T}_2)$ (Step~3) gives $\rk_{\KK}(T_m) \le 9q + 5\delta = \lceil 9m/2 \rceil$, matching $\brk_{\KK}(T_m)$. Likewise, summing $k$ block-disjoint copies of Step~3 on $\Sym^2(\KK^{6k}) \otimes \KK^3$ gives $\rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_{2k}) \le 9k = \brk_{\KK}(T_{2k}) \le \rk_{\KK}^{\mathrm{sym}_{1,2}}(\widetilde{T}_{2k})$.
+
+\emph{Part (3).} As noted after~\eqref{eq:Tm-def}, $T_3$ is coordinatewise identical (up to factor permutation) to the bilinear multiplication tensor $\mathfrak{so}_3(\KK) \times \Mat_{3 \times 3}(\KK) \to \Mat_{3 \times 3}(\KK)$ of a $3 \times 3$ skew-symmetric matrix by a general $3 \times 3$ matrix. Khoruzhii, Gel\ss, and Pokutta~\cite{KGP2025} construct an explicit $14$-product bilinear algorithm for this matrix product with coefficients in $\ZZ[1/2]$ (discovered via $\FF_3$ flip-graph search and lifted to $\ZZ[1/2]$). Mapping $\ZZ[1/2] \to \KK$ ($\chr\KK \neq 2$) gives $\rk_{\KK}(T_3) \le 14$, which combined with $\brk_{\KK}(T_3) = \lceil 27/2 \rceil = 14$ from Part~(1) forces $\rk_{\KK}(T_3) = 14$ unconditionally. Finally, over nonsplit fields ($\chr\KK \neq 2$), combining $\rk_{\KK}(T_m) \ge \lceil 9m/2 \rceil$ with the mode-shared block decompositions $T_4 = T_3 \oplus_{1,2} T_1$ ($14 + 5 = 19$), $T_5 = T_3 \oplus_{1,2} T_2$ ($14 + 10 = 24$), and $T_6 = T_3 \oplus_{1,2} T_3$ ($14 + 14 = 28$) confines $\rk_{\KK}(T_m)$ for $m = 4, 5, 6$ to $\{18, 19\}$, $\{23, 24\}$, and $\{27, 28\}$.
+\end{proof}
+
+\begin{remark}[Open nonsplit cases for $m \ge 4$]\label{rem:open-m4}
+Whether $\rk_{\QQ}(T_4) = 18$ or $19$ (and whether the simultaneous Waring rank $\rk_{\QQ}^{\mathrm{sym}_{1,2}}(\widetilde{T}_4)$ of sums of two $2 \times 3$ minor nets equals $18$, $19$, or $20$) remains an interesting open question: at $m = 4$, the $36 \times 36$ Koszul flattening again has zero slack at rank $18$, but each summand now carries four vector columns per input mode rather than two.
+\end{remark}
+
+\section{Application to Complete Projective \texorpdfstring{$j = 0$}{j = 0} Elliptic Addition}\label{sec:rcb}
+
+Throughout this section, $\KK$ is a field with $\chr\KK \neq 2, 3$ and $b \in \KK^\times$. For $P_a = (X_a, Y_a, Z_a) \in \KK^3$ ($a = 1, 2$), set $t_0 = X_1 X_2$, $t_1 = Y_1 Y_2$, $t_2 = Z_1 Z_2$, $t_3 = X_1 Y_2 + X_2 Y_1$, $t_4 = Y_1 Z_2 + Y_2 Z_1$, and $t_5 = X_1 Z_2 + X_2 Z_1$. By Bosma and Lenstra~\cite{BosmaLenstra1995}, any complete projective addition law on a smooth Weierstrass cubic has bidegree at least $(2, 2)$; for $E_b : Y^2 Z = X^3 + b Z^3 \subset \PP^2$, Renes, Costello, and Batina~\cite[Algorithm~7]{RCB2016} gave the $(1,2)$-symmetric bidegree-$(2,2)$ formulas
+\begin{equation}\label{eq:rcb-formulas}
+\begin{aligned}
+  X_+ &= t_3(t_1 - 3b t_2) - 3b t_4 t_5, \\
+  Y_+ &= (t_1 + 3b t_2)(t_1 - 3b t_2) + 9b t_0 t_5, \\
+  Z_+ &= 3 t_0 t_3 + (t_1 + 3b t_2) t_4,
+\end{aligned}
+\end{equation}
+defining the algebraic coefficient tensor $T_{\mathrm{RCB}} = (M_X, M_Y, M_Z) \in \Sym^2\bigl(\Sym^2((\KK^3)^*)\bigr) \otimes \KK^3 \cong \Sym^2(\KK^6) \otimes \KK^3$.
+
+\begin{remark}[Algebraic coefficient tensor vs.\ geometric completeness]\label{rem:rcb-alg-geom}
+As a multilinear tensor on $\Sym^2((\KK^3)^*)$, $T_{\mathrm{RCB}}$ is well-defined for every $b \in \KK^\times$ (measuring bilinear multiplications from quadratic Veronese coordinates of $P_1, P_2$, distinct from straight-line cost starting from $(X_a, Y_a, Z_a)$), whereas geometrically~\eqref{eq:rcb-formulas} has base locus $P_1 - P_2 \in E_b(\overline{\KK})[2]\setminus\{\cO\}$ on $E_b(\overline{\KK})^2$ and is therefore complete on all of $E_b(\KK)$ if and only if $b \notin (\KK^\times)^3$.
+\end{remark}
+
+\begin{proof}[Proof of Proposition~\ref{prop:rcb}]
+In the split basis $\{X^2, YZ, Y^2 - 3bZ^2\} \sqcup \{XY, XZ, Y^2 + 3bZ^2\}$ of $\Sym^2((\KK^3)^*)$ (valid since $6b \in \KK^\times$), expanding~\eqref{eq:rcb-formulas} makes every slice of $T_{\mathrm{RCB}}$ block anti-diagonal, $M_k = \bigl(\begin{smallmatrix} 0 & B_k \\ B_k^T & 0 \end{smallmatrix}\bigr)$, with sparse single-entry-per-row/column blocks $B_X, B_Y, B_Z$. Rescaling and permuting to $\mathbf{u}(P) := (6X^2,\, -2YZ,\, Y^2 - 3bZ^2)$ and $\mathbf{v}(P) := (Y^2 + 3bZ^2,\, XY,\, -3bXZ)$ (which has transition determinant $\pm 216 b^2 \in \KK^\times$ relative to $(X^2, Y^2, Z^2, YZ, XZ, XY)$) yields the exact polynomial identity
+\begin{equation}\label{eq:rcb-cross}
+  (-X_+, 2Y_+, 2Z_+) \;=\; \mathbf{u}(P_1) \times \mathbf{v}(P_2) + \mathbf{u}(P_2) \times \mathbf{v}(P_1).
+\end{equation}
+Applying the identical basis change $(\mathbf{u}, \mathbf{v})$ on modes $1$ and $2$ and rescaling mode $3$ to $(-X_+, 2Y_+, 2Z_+)$ exhibits $T_{\mathrm{RCB}} \cong_{\KK}^{\mathrm{sym}_{1,2}} \widetilde{T}_2$, eliminating $b$ completely; Theorem~\ref{thm:main-dichotomy} and Lemma~\ref{lem:minors-and-omega}(2) immediately yield the stated ranks and formal border ranks of $T_{\mathrm{RCB}}$.
+
+Next, let $\LL/\KK$ be any field extension containing $i$ with $i^2 = -1$ (in particular $\LL = \KK(i)$ when $-1 \notin (\KK^\times)^2$). Under $T_{\mathrm{RCB}} \cong_{\KK} T_2$, the pencil $\Psi_{\mathrm{RCB}} = (M_X + i M_Y,\, M_Z)$ maps over $\LL$ to $I_2 \otimes (S_1, S_2)$ with $S_1 := -E_0 + \frac{i}{2}E_1$ and $S_2 := \frac{1}{2}E_2$. Setting $k_1 := (1, -\frac{i}{2}, 0)^T \in \ker S_1$, $k_2 := (0, 0, 1)^T \in \ker S_2$, and $v_0 := (0, 1, 0)^T$ ($\det(k_2, 2k_1, v_0) = 2 \neq 0$), the vectors $w_2 := S_1 k_2 = S_2(2k_1) = (-\frac{i}{2}, -1, 0)^T$, $w_3 := S_1 v_0 = (0, 0, 1)^T$, and $w_1 := S_2 v_0 = (\frac{1}{2}, 0, 0)^T$ satisfy $\det(w_2, w_3, w_1) = -\frac{1}{2} \neq 0$ and transform $s S_1 + t S_2 \mapsto \left(\begin{smallmatrix} s & t & 0 \\ 0 & 0 & s \\ 0 & 0 & t \end{smallmatrix}\right) = L_1 \oplus L_1^T$, so $\Psi_{\mathrm{RCB}} \cong_{\LL} L_1^{\oplus 2} \oplus (L_1^T)^{\oplus 2}$.
+
+For $(A, B) = L_1^{\oplus 2} \oplus (L_1^T)^{\oplus 2}$ over $\overline{\LL}$ (cf.\ Grigoriev~\cite{Grigoriev1978} and Ja'Ja'~\cite{JaJa1979}), $\rk(A) = 4$, while the projections $\Pi_L, \Pi_R : \overline{\LL}^6 \twoheadrightarrow \overline{\LL}^2$ onto the two zero-rows and two zero-columns of $A$ satisfy $\rk(\Pi_L B) = \rk(B \Pi_R^T) = 2$ and $\Pi_L B \Pi_R^T = 0$. In any decomposition $(A, B) = \sum_{m=1}^r x_m \otimes y_m \otimes z_m$, quotienting mode $1$ by two vectors $x_1, x_2$ whose $\Pi_L$-images span $\overline{\LL}^2$ kills two summands while preserving $\rk(\bar{A}) = 4$ and $\rk(\bar{B}\Pi_R^T) = 2$ (as $\im(A), \im(B\Pi_R^T) \subseteq \ker\Pi_L$); quotienting mode $2$ by two remaining vectors $y_3, y_4$ whose $\Pi_R$-images span $\overline{\LL}^2$ kills two more summands while preserving $\rk(\bar{\bar{A}}) = 4$, forcing $r - 4 \ge 4$. Conversely,~\eqref{eq:rcb-cross} gives $X_+ + i Y_+ = \sum_{a \neq a'} \bigl((-u_{a,1} - \frac{i}{2}u_{a,0})v_{a',2} + u_{a,2}(v_{a',1} + \frac{i}{2}v_{a',0})\bigr)$ ($4$ products) and $Z_+ = \frac{1}{2}\sum_{a \neq a'}(u_{a,0} v_{a',1} - u_{a,1} v_{a',0})$ ($4$ products), so $\rk_{\LL}(\Psi_{\mathrm{RCB}}) = \rk_{\overline{\LL}}(\Psi_{\mathrm{RCB}}) = 8$. Finally, mode-$1$ flattening rank $6$ gives $\brk_{\overline{\LL}}(\Psi_{\mathrm{RCB}}) \ge 6$, while $(e_0 + \varepsilon e_2)\otimes(e_1 + \varepsilon^{-1}e_2)\otimes f_2 + (e_0 + \varepsilon e_1)\otimes(e_0 + \varepsilon^{-1}e_2)\otimes f_1 - \varepsilon^{-1} e_0 \otimes e_2 \otimes (f_1 + f_2) = (L_1 \oplus L_1^T) + O(\varepsilon)$ over $\ZZ[\varepsilon, \varepsilon^{-1}]$ doubles to $\brk_{\LL}(\Psi_{\mathrm{RCB}}) = 6$.
+\end{proof}
+
+\section{Formal Verification in Lean 4}\label{sec:lean}
+
+To eliminate sign, characteristic, and degeneracy subtleties in the Koszul idempotent and Kronecker-pencil arguments, the algebraic theorems of this paper have been formalized in Lean~4 (\texttt{v4.36.0}) against Mathlib (\texttt{v4.36.0}) within the \texttt{SemaevRCB} library (\texttt{Defs.lean}, \texttt{RCBBlockAndPencil.lean}, \texttt{RCBDichotomy.lean}, and \texttt{GeneralMinorsAndChar3.lean}). All modules compile with zero \texttt{sorry} declarations, zero \texttt{native\_decide} tactics, and only Lean's standard foundational axioms (\texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}).
+
+In \texttt{Defs.lean}, $3$-tensors are represented as functions \texttt{Tensor3 K I J L := I -> J -> L -> K}. Upper bounds on rank and $(1,2)$-symmetric rank are encoded directly by existential witness predicates \texttt{HasTensorRankLe} and \texttt{HasSym12RankLe}, so an exact rank $r$ is certified as the conjunction of \texttt{Has...Le T r} and $\lnot\,\texttt{Has...Le T (r - 1)}$. Formal border rank (\texttt{HasFormalBorderRankLe} and \texttt{HasSym12FormalBorderRankLe}) is formalized in cleared-denominator polynomial form over \texttt{K[X]} as in Definition~\ref{def:border-rank}, and Remark~\ref{rem:border-rank-props}(a) is proved over arbitrary fields via the rational function field \texttt{RatFunc K} in \texttt{formalBorderRank\_flattening\_lower\_bound}. Table~\ref{tab:lean-map} records the correspondence between paper statements and Lean~4 declarations.
+
+\begin{table}[htbp]
+\centering
+\caption{Correspondence between results in this paper and formalized declarations in the Lean~4 library \texttt{SemaevRCB} (\texttt{v4.36.0}).}\label{tab:lean-map}
+\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\resizebox{\ifdim\width>\textwidth\textwidth\else\width\fi}{!}{%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Paper Reference & Lean~4 Module & Formalized Declaration(s) \\
+\midrule
+Remark~\ref{rem:border-rank-props}(a) (flattening bound) & \texttt{Defs.lean} & \texttt{formalBorderRank\_flattening\_lower\_bound} \\
+Lemma~\ref{lem:minors-and-omega}(1),~\eqref{eq:minors-polarization} ($2 \times 3$ minors) & \texttt{GeneralMinorsAndChar3.lean} & \texttt{minors2x3\_eval} \\
+Theorem~\ref{thm:main-dichotomy} (all $\chr\KK \neq 2$, incl.\ $\chr 3$) & \texttt{GeneralMinorsAndChar3.lean} & \texttt{minors2x3\_all\_char\_dichotomy} \\
+Theorem~\ref{thm:main-dichotomy}(2), Step~5.2 ($\chr\KK \neq 3$) & \texttt{GeneralMinorsAndChar3.lean} & \texttt{I2\_eps3\_rank\_nine\_imp\_char\_ne\_three} \\
+Theorem~\ref{thm:main-dichotomy}(2), Step~5 ($-3 \in (\KK^\times)^2$) & \texttt{RCBDichotomy.lean} & \texttt{rank\_9\_implies\_isSquare\_neg\_three} \\
+Proposition~\ref{prop:non-hesse} (non-Hesse trace frames) & \texttt{GeneralMinorsAndChar3.lean} & \texttt{nonHesse\_equiangular\_idempotents} \\
+Theorem~\ref{thm:hierarchy}(1), $m = 1$ ($\rk = \brk = 5$) & \texttt{GeneralMinorsAndChar3.lean} & \texttt{eps3\_exact\_rank\_and\_borderRank\_five} \\
+Theorem~\ref{thm:hierarchy}(1) ($\brk_{\KK}(T_m) = \lceil 9m/2 \rceil$) & \texttt{GeneralMinorsAndChar3.lean} & \texttt{Im\_eps3\_exact\_formalBorderRank} \\
+Theorem~\ref{thm:hierarchy}(2) (split-field $\rk_{\KK}(T_m)$) & \texttt{GeneralMinorsAndChar3.lean} & \texttt{Im\_eps3\_exact\_rank\_of\_primCubeRoot} \\
+Proposition~\ref{prop:rcb},~\eqref{eq:rcb-cross} ($T_{\mathrm{RCB}} \cong_{\KK}^{\mathrm{sym}_{1,2}} \widetilde{T}_2$) & \texttt{RCBBlockAndPencil.lean} & \texttt{rcb\_cross\_product\_identity}, \texttt{T\_RCB\_sym12Congruent\_symEps3} \\
+Proposition~\ref{prop:rcb} ($T_{\mathrm{RCB}}$ rank dichotomy) & \texttt{RCBDichotomy.lean} & \texttt{rcb\_rank\_dichotomy} \\
+Proposition~\ref{prop:rcb} ($\Psi_{\mathrm{RCB}}$ Kronecker, $\rk 8$, $\brk 6$) & \texttt{RCBBlockAndPencil.lean} & \texttt{Psi\_RCB\_equiv\_kroneckerDouble}, \texttt{Psi\_RCB\_rank\_ge\_eight}, \\
+ & & \texttt{Psi\_RCB\_hasFormalBorderRankLe\_six} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\noindent\emph{Scope note.} The results of Sections~\ref{sec:prelim}--\ref{sec:rcb} are formalized end-to-end in \texttt{SemaevRCB} (with \texttt{nonHesse\_equiangular\_idempotents} certifying the concrete $(a, b, c) = (2, 1, 1)$ witness of Proposition~\ref{prop:non-hesse}, \texttt{Im\_eps3\_exact\_rank\_of\_primCubeRoot} certifying $\rk_{\KK}(T_m) = \lceil 9m/2 \rceil$ in Theorem~\ref{thm:hierarchy}(2), and \texttt{rcb\_unconditionally\_complete\_iff} certifying Remark~\ref{rem:rcb-alg-geom}), with one external citation: the upper bound $\rk_{\KK}(T_3) \le 14$ in Theorem~\ref{thm:hierarchy}(3) (and the resulting upper endpoints $19, 24, 28$ for $m = 4, 5, 6$) invokes the $14$-product $\ZZ[1/2]$ bilinear scheme of Khoruzhii, Gel\ss, and Pokutta~\cite{KGP2025}, while the matching lower bound $\brk_{\KK}(T_3) = 14$ is formalized in \texttt{Im\_eps3\_exact\_formalBorderRank}.
+
+\begin{thebibliography}{99}
+
+\bibitem{ArtebaniDolgachev2009}
+M.~Artebani and I.~Dolgachev,
+\emph{The Hesse pencil of plane cubic curves},
+Enseign.\ Math.\ (2) \textbf{55} (2009), no.~3--4, 235--273.
+
+\bibitem{Bini1980}
+D.~Bini,
+\emph{Relations between exact and approximate bilinear algorithms. Applications},
+Calcolo \textbf{17} (1980), no.~1, 87--97.
+
+\bibitem{BosmaLenstra1995}
+W.~Bosma and H.~W.~Lenstra~Jr.,
+\emph{Complete systems of two addition laws for elliptic curves},
+J.~Number Theory \textbf{53} (1995), no.~2, 229--240.
+
+\bibitem{BCS1997}
+P.~B\"urgisser, M.~Clausen, and M.~A.~Shokrollahi,
+\emph{Algebraic Complexity Theory},
+Grundlehren der mathematischen Wissenschaften, vol.~315,
+Springer-Verlag, Berlin, 1997.
+
+\bibitem{CJZ2018}
+M.~Christandl, A.~K.~Jensen, and J.~Zuiddam,
+\emph{Tensor rank is not multiplicative under the tensor product},
+Linear Algebra Appl.\ \textbf{543} (2018), 125--139 (\texttt{arXiv:1705.09379}).
+
+\bibitem{CHL2023}
+A.~Conner, H.~Huang, and J.~M.~Landsberg,
+\emph{Bad and good news for Strassen's laser method: Border rank of $\mathrm{Perm}_3$ and strict submultiplicativity},
+Found.\ Comput.\ Math.\ \textbf{23} (2023), no.~6, 2049--2087 (\texttt{arXiv:2009.11391}).
+
+\bibitem{deSilvaLim2008}
+V.~de~Silva and L.-H.~Lim,
+\emph{Tensor rank and the ill-posedness of the best low-rank approximation problem},
+SIAM J.\ Matrix Anal.\ Appl.\ \textbf{30} (2008), no.~3, 1084--1127.
+
+\bibitem{GIJM2022FFA}
+G.~R.~W.~Greaves, J.~W.~Iverson, J.~Jasper, and D.~G.~Mixon,
+\emph{Frames over finite fields: Basic theory and equiangular lines in unitary geometry},
+Finite Fields Appl.\ \textbf{77} (2022), Paper No.~101954, 41~pp.\ (\texttt{arXiv:2012.12977}).
+
+\bibitem{GIJM2022LAA}
+G.~R.~W.~Greaves, J.~W.~Iverson, J.~Jasper, and D.~G.~Mixon,
+\emph{Frames over finite fields: Equiangular lines in orthogonal geometry},
+Linear Algebra Appl.\ \textbf{639} (2022), 50--80 (\texttt{arXiv:2012.13642}).
+
+\bibitem{Grigoriev1978}
+D.~Yu.~Grigoriev,
+\emph{Multiplicative complexity of a pair of bilinear forms and of the polynomial multiplication},
+Mathematical Foundations of Computer Science 1978 (Proc.\ 7th Sympos., Zakopane, 1978),
+Lecture Notes in Comput.\ Sci., vol.~64, Springer, Berlin, 1978, pp.~250--256.
+
+\bibitem{HuangLandsberg2026}
+H.~Huang and J.~M.~Landsberg,
+\emph{On linear spaces of matrices of bounded rank},
+Selecta Math.\ (N.S.) \textbf{32} (2026), no.~2, Paper No.~30, 42~pp.\ (\texttt{arXiv:2306.14428}).
+
+\bibitem{JaJa1979}
+J.~Ja'Ja',
+\emph{Optimal evaluation of pairs of bilinear forms},
+SIAM J.\ Comput.\ \textbf{8} (1979), no.~3, 443--462.
+
+\bibitem{KGP2025}
+K.~Khoruzhii, P.~Gel\ss, and S.~Pokutta,
+\emph{Faster algorithms for structured matrix multiplication via flip graph search},
+preprint, \texttt{arXiv:2511.10786} (2025).
+
+\bibitem{Landsberg2012}
+J.~M.~Landsberg,
+\emph{Tensors: Geometry and Applications},
+Graduate Studies in Mathematics, vol.~128,
+American Mathematical Society, Providence, RI, 2012.
+
+\bibitem{LandsbergOttaviani2013}
+J.~M.~Landsberg and G.~Ottaviani,
+\emph{Equations for secant varieties of Veronese and other varieties},
+Ann.\ Mat.\ Pura Appl.\ (4) \textbf{192} (2013), no.~4, 569--606.
+
+\bibitem{RBSC2004}
+J.~M.~Renes, R.~Blume-Kohout, A.~J.~Scott, and C.~M.~Caves,
+\emph{Symmetric informationally complete quantum measurements},
+J.~Math.\ Phys.\ \textbf{45} (2004), no.~6, 2171--2180.
+
+\bibitem{RCB2016}
+J.~Renes, C.~Costello, and L.~Batina,
+\emph{Complete addition formulas for prime order elliptic curves},
+Advances in Cryptology --- EUROCRYPT 2016, Part~I,
+Lecture Notes in Comput.\ Sci., vol.~9665, Springer, Berlin, 2016, pp.~403--428.
+
+\bibitem{Strassen1973}
+V.~Strassen,
+\emph{Vermeidung von Divisionen},
+J.~Reine Angew.\ Math.\ \textbf{264} (1973), 184--202.
+
+\bibitem{Strassen1983}
+V.~Strassen,
+\emph{Rank and optimal computation of generic tensors},
+Linear Algebra Appl.\ \textbf{52/53} (1983), 645--685.
+
+\bibitem{Teitler2014}
+Z.~Teitler,
+\emph{Geometric lower bounds for generalized ranks},
+preprint, \texttt{arXiv:1406.5145} (2014).
+
+\end{thebibliography}
+
+\end{document}
