@@ -19,10 +19,25 @@ Extensions to `SemaevRCB` formalizing:
 4. General-`m` shared-input cross-product hierarchy `T_m = I_m ⊗₁,₂ ε₃` (`Im_eps3`): determinant
    `(-2)^m` of the `9m × 9m` Koszul flattening, exact formal border rank `⌈9m / 2⌉` over every
    field with `char K ≠ 2` (`Im_eps3_exact_formalBorderRank`), and exact split-field tensor rank
-   `⌈9m / 2⌉` when `K` has a primitive cube root of unity (`Im_eps3_exact_rank_of_primCubeRoot`).
+   `⌈9m / 2⌉` when `K` has a primitive cube root of unity (`Im_eps3_exact_rank_of_primCubeRoot`),
+   together with the `(1,2)`-symmetric block-diagonal family `T̃_{2k} = I_k ⊗₁,₂ T̃₂`
+   (`symEps3Block`, `symEps3Block_isSym12`, `symEps3Block_equiv_Im_eps3`,
+   `symEps3Block_exact_sym12FormalBorderRank`, `symEps3Block_exact_sym12Rank_of_primCubeRoot`).
 5. Explicit non-Hesse `9`-element rank-`1` idempotent solution to the equiangular trace-frame
    system `Tr(Q_r Q_s) = (3/4) δ_{rs} + 1/4` with exactly `3` collinear point triples instead of
    `12` (`nonHesse_equiangular_idempotents`).
+6. Normalized Koszul flattening trace identity `Tr(F_m(u ⊗ v ⊗ w) Φ_m⁻¹) = (3/2) ∑_a (u_a × v_a)ᵀ w`
+   (`koszulFlatInv_Im_eps3`, `koszulFlat_Im_eps3_mul_inv`, `koszulFlat_Im_eps3_normalized_trace`)
+   and the uniform characteristic-`3` lower bound `rank_K(T_m) ≥ ⌊9m / 2⌋ + 1` for all `m ≥ 1`,
+   giving strict border-rank gaps `rank_K(T_{2k}) ≥ 9k + 1 > 9k = brk_K(T_{2k})` for `Im_eps3` and
+   `symEps3Block` (`Im_eps3_char3_rank_ge_floor_add_one`, `Im_eps3_even_char3_strict_gap`,
+   `symEps3Block_char3_strict_gap`).
+7. Explicit `14`-term `ℤ[1/2]` decomposition of `T_3 = I_3 ⊗₁,₂ ε₃` converted from the
+   Khoruzhii–Gelß–Pokutta scheme (`arXiv:2511.10786`), establishing `rank_K(T_3) = 14` over every
+   field `K` with `char K ≠ 2` (`I3_eps3_hasTensorRankLe_fourteen`, `I3_eps3_exact_rank_fourteen`),
+   nonsplit upper bounds `19, 24, 28` for `T_4, T_5, T_6`, and exact characteristic-`3` ranks
+   `rank_K(T_4) = 19` and `rank_K(T_6) = 28` (`I4_eps3_char3_exact_rank_nineteen`,
+   `I6_eps3_char3_exact_rank_twentyeight`).
 -/
 
 namespace SemaevRCB
@@ -764,6 +779,354 @@ theorem Im_eps3_exact_rank_of_primCubeRoot {K : Type*} [Field K] (h2 : (2 : K) �
   have hle := hge_rk ((9 * m + 1) / 2 - 1) hlt
   omega
 
+/-! ### Section 4b: Generalized `(1,2)`-Symmetric Block Tensor `T̃_{2k} = I_k ⊗₁,₂ T̃₂` -/
+
+/-- A 3-tensor `T : Tensor3 K I I L` is `(1,2)`-symmetric if `T i j l = T j i l` for all `i, j, l`. -/
+def IsSym12 {K I L : Type*} (T : Tensor3 K I I L) : Prop :=
+  ∀ i j l, T i j l = T j i l
+
+lemma eps3_skew (K : Type*) [CommRing K] (i j k : Fin 3) :
+    eps3 K j i k = -eps3 K i j k := by
+  fin_cases i <;> fin_cases j <;> fin_cases k <;> simp [eps3]
+
+lemma symEps3_isSym12 (K : Type*) [CommRing K] : IsSym12 (symEps3 K) := by
+  intro ⟨a, i⟩ ⟨b, j⟩ k
+  fin_cases a <;> fin_cases b
+  · simp [symEps3]
+  · simp only [Fin.zero_eta, Fin.mk_one, Fin.isValue, symEps3, zero_ne_one, one_ne_zero,
+      and_self, ↓reduceIte]
+    rw [eps3_skew]
+  · simp only [Fin.mk_one, Fin.zero_eta, Fin.isValue, symEps3, zero_ne_one, one_ne_zero,
+      and_self, ↓reduceIte]
+    rw [eps3_skew, neg_neg]
+  · simp [symEps3]
+
+/-- Generalized `(1,2)`-symmetric block-diagonal tensor `T̃_{2k} = I_k ⊗₁,₂ T̃₂` consisting of `k`
+block-disjoint copies of `symEps3 K` sharing mode `3`. -/
+def symEps3Block (K : Type*) [CommRing K] (k : ℕ) :
+    Tensor3 K (Fin k × Fin 2 × Fin 3) (Fin k × Fin 2 × Fin 3) (Fin 3) :=
+  fun b₁ b₂ c => if b₁.1 = b₂.1 then symEps3 K b₁.2 b₂.2 c else 0
+
+/-- `symEps3Block K k` is `(1,2)`-symmetric over every commutative ring `K` and every `k : ℕ`. -/
+theorem symEps3Block_isSym12 (K : Type*) [CommRing K] (k : ℕ) :
+    IsSym12 (symEps3Block K k) := by
+  intro b₁ b₂ c
+  simp only [symEps3Block]
+  by_cases h : b₁.1 = b₂.1
+  · simp [h, symEps3_isSym12 K b₁.2 b₂.2 c]
+  · simp [h, Ne.symm h]
+
+/-- Explicit bijection `Fin (r * k) ≃ Fin k × Fin r` for `r > 0` via division and remainder. -/
+def finMulEquiv (r k : ℕ) (hr : 0 < r) : Fin (r * k) ≃ Fin k × Fin r where
+  toFun t :=
+    (⟨t.val / r, Nat.div_lt_of_lt_mul t.isLt⟩,
+     ⟨t.val % r, Nat.mod_lt t.val hr⟩)
+  invFun p :=
+    ⟨r * p.1.val + p.2.val, by
+      calc r * p.1.val + p.2.val < r * p.1.val + r := Nat.add_lt_add_left p.2.isLt _
+        _ = r * (p.1.val + 1) := by ring
+        _ ≤ r * k := Nat.mul_le_mul_left r p.1.isLt⟩
+  left_inv t := by
+    ext
+    dsimp
+    exact Nat.div_add_mod t.val r
+  right_inv p := by
+    rcases p with ⟨a, b⟩
+    refine Prod.ext (Fin.ext ?_) (Fin.ext ?_)
+    · dsimp
+      rw [Nat.mul_add_div hr, Nat.div_eq_of_lt b.isLt, add_zero]
+    · dsimp
+      rw [Nat.mul_add_mod, Nat.mod_eq_of_lt b.isLt]
+
+/-- Over every commutative ring `K` and every `k : ℕ`, the `(1,2)`-symmetric block-diagonal tensor
+`symEps3Block K k` (`T̃_{2k}`) is `GL`-equivalent (via block-diagonal `symToDiagMat` on mode `1`
+and the canonical reindexing `Fin (2 * k) ≃ Fin k × Fin 2` on mode `2`) to `Im_eps3 K (2 * k)`. -/
+theorem symEps3Block_equiv_Im_eps3 (K : Type*) [CommRing K] (k : ℕ) :
+    TensorEquiv (symEps3Block K k) (Im_eps3 K (2 * k)) := by
+  let e : Fin (2 * k) ≃ Fin k × Fin 2 := finMulEquiv 2 k (by decide)
+  let A : Matrix (Fin (2 * k) × Fin 3) (Fin k × Fin 2 × Fin 3) K :=
+    fun p q => if (e p.1).1 = q.1 then symToDiagMat K ((e p.1).2, p.2) q.2 else 0
+  let Ai : Matrix (Fin k × Fin 2 × Fin 3) (Fin (2 * k) × Fin 3) K :=
+    fun p q => if p.1 = (e q.1).1 then (-symToDiagMat K) p.2 ((e q.1).2, q.2) else 0
+  let B : Matrix (Fin (2 * k) × Fin 3) (Fin k × Fin 2 × Fin 3) K :=
+    fun p q => if (e p.1).1 = q.1 ∧ (e p.1).2 = q.2.1 ∧ p.2 = q.2.2 then 1 else 0
+  let Bi : Matrix (Fin k × Fin 2 × Fin 3) (Fin (2 * k) × Fin 3) K :=
+    fun p q => if p.1 = (e q.1).1 ∧ p.2.1 = (e q.1).2 ∧ p.2.2 = q.2 then 1 else 0
+  refine ⟨A, Ai, B, Bi, 1, 1, ?_, ?_, ?_, ?_,
+    Matrix.mul_one (1 : Matrix (Fin 3) (Fin 3) K),
+    Matrix.mul_one (1 : Matrix (Fin 3) (Fin 3) K), ?_⟩
+  · ext ⟨a₁, i₁⟩ ⟨a₂, i₂⟩
+    rw [Matrix.mul_apply, Fintype.sum_prod_type]
+    simp only [A, Ai]
+    by_cases hblk : (e a₁).1 = (e a₂).1
+    · rw [Finset.sum_eq_single (e a₁).1]
+      · simp only [↓reduceIte, hblk]
+        have hmul := congrFun (congrFun (symToDiagMat_mul_neg K) ((e a₁).2, i₁)) ((e a₂).2, i₂)
+        rw [Matrix.mul_apply, Matrix.one_apply] at hmul
+        rw [hmul, Matrix.one_apply]
+        have hiff : ((e a₁).2, i₁) = ((e a₂).2, i₂) ↔ (a₁, i₁) = (a₂, i₂) := by
+          constructor
+          · intro h
+            rcases Prod.mk.inj h with ⟨h2, hi⟩
+            exact Prod.ext (e.injective (Prod.ext hblk h2)) hi
+          · intro h
+            rcases Prod.mk.inj h with ⟨ha, hi⟩
+            exact Prod.ext (congrArg (fun x => (e x).2) ha) hi
+        simp [hiff]
+      · intro b _ hb
+        simp [Ne.symm hb]
+      · intro hb
+        exact absurd (Finset.mem_univ _) hb
+    · have ha_ne : a₁ ≠ a₂ := fun h => hblk (congrArg (fun x => (e x).1) h)
+      simp only [Matrix.one_apply, Prod.mk.injEq, ha_ne, false_and, ↓reduceIte]
+      refine Finset.sum_eq_zero fun b _ => Finset.sum_eq_zero fun q _ => ?_
+      by_cases hb : (e a₁).1 = b
+      · subst hb; simp [hblk]
+      · simp [hb]
+  · ext ⟨b₁, q₁⟩ ⟨b₂, q₂⟩
+    rw [Matrix.mul_apply, Fintype.sum_prod_type]
+    rw [← e.symm.sum_comp (fun a =>
+      ∑ j : Fin 3, Ai (b₁, q₁) (a, j) * A (a, j) (b₂, q₂))]
+    rw [Fintype.sum_prod_type]
+    simp only [Ai, A, Equiv.apply_symm_apply]
+    by_cases hblk : b₁ = b₂
+    · subst hblk
+      rw [Finset.sum_eq_single b₁]
+      · simp only [↓reduceIte]
+        have hmul := congrFun (congrFun (neg_mul_symToDiagMat K) q₁) q₂
+        rw [Matrix.mul_apply, Fintype.sum_prod_type, Matrix.one_apply] at hmul
+        rw [hmul, Matrix.one_apply]
+        simp
+      · intro b _ hb
+        simp [Ne.symm hb]
+      · intro hb
+        exact absurd (Finset.mem_univ _) hb
+    · simp only [Matrix.one_apply, Prod.mk.injEq, hblk, false_and, ↓reduceIte]
+      refine Finset.sum_eq_zero fun b _ => Finset.sum_eq_zero fun c _ =>
+        Finset.sum_eq_zero fun j _ => ?_
+      by_cases hb : b₁ = b
+      · subst hb; simp [hblk]
+      · simp [hb]
+  · ext ⟨a₁, i₁⟩ ⟨a₂, i₂⟩
+    rw [Matrix.mul_apply]
+    simp only [B, Bi]
+    rw [Finset.sum_eq_single ((e a₁).1, ((e a₁).2, i₁))]
+    · simp only [true_and, ↓reduceIte, one_mul, Matrix.one_apply, Prod.mk.injEq]
+      have hiff : ((e a₁).1 = (e a₂).1 ∧ (e a₁).2 = (e a₂).2 ∧ i₁ = i₂) ↔ (a₁ = a₂ ∧ i₁ = i₂) := by
+        constructor
+        · rintro ⟨h1, h2, hi⟩
+          exact ⟨e.injective (Prod.ext h1 h2), hi⟩
+        · rintro ⟨rfl, rfl⟩
+          exact ⟨rfl, rfl, rfl⟩
+      simp [hiff]
+    · intro ⟨b, c, j⟩ _ hne
+      have hnot : ¬ ((e a₁).1 = b ∧ (e a₁).2 = c ∧ i₁ = j) := by
+        rintro ⟨rfl, rfl, rfl⟩
+        exact hne rfl
+      simp [hnot]
+    · intro hmem
+      exact absurd (Finset.mem_univ _) hmem
+  · ext ⟨b₁, c₁, i₁⟩ ⟨b₂, c₂, i₂⟩
+    rw [Matrix.mul_apply]
+    simp only [Bi, B]
+    rw [Finset.sum_eq_single (e.symm (b₁, c₁), i₁)]
+    · simp [Equiv.apply_symm_apply, Matrix.one_apply, Prod.mk.injEq]
+    · intro ⟨a, j⟩ _ hne
+      have hnot : ¬ (b₁ = (e a).1 ∧ c₁ = (e a).2 ∧ i₁ = j) := by
+        rintro ⟨h1, h2, hj⟩
+        apply hne
+        have ha : a = e.symm (b₁, c₁) := by
+          apply e.injective
+          rw [Equiv.apply_symm_apply]
+          exact Prod.ext h1.symm h2.symm
+        exact Prod.ext ha hj.symm
+      simp [hnot]
+    · intro hmem
+      exact absurd (Finset.mem_univ _) hmem
+  · funext ⟨a₁, i₁⟩ ⟨a₂, i₂⟩ l
+    unfold mapTensor
+    have hcollapse :
+        (∑ p : Fin k × Fin 2 × Fin 3, ∑ q : Fin k × Fin 2 × Fin 3, ∑ l' : Fin 3,
+          A (a₁, i₁) p * B (a₂, i₂) q * (1 : Matrix (Fin 3) (Fin 3) K) l l' *
+            symEps3Block K k p q l') =
+        ∑ p : Fin k × Fin 2 × Fin 3,
+          A (a₁, i₁) p * symEps3Block K k p ((e a₂).1, ((e a₂).2, i₂)) l := by
+      refine Finset.sum_congr rfl fun p _ => ?_
+      rw [Finset.sum_eq_single ((e a₂).1, ((e a₂).2, i₂))]
+      · rw [Finset.sum_eq_single l]
+        · simp [B]
+        · intro l' _ hl'
+          simp [Ne.symm hl']
+        · intro hl
+          exact absurd (Finset.mem_univ l) hl
+      · intro ⟨b, c, j⟩ _ hne
+        have hnot : ¬ ((e a₂).1 = b ∧ (e a₂).2 = c ∧ i₂ = j) := by
+          rintro ⟨rfl, rfl, rfl⟩
+          exact hne rfl
+        simp [B, hnot]
+      · intro hmem
+        exact absurd (Finset.mem_univ _) hmem
+    rw [hcollapse, Fintype.sum_prod_type]
+    simp only [A, symEps3Block]
+    by_cases hblk : (e a₁).1 = (e a₂).1
+    · rw [Finset.sum_eq_single (e a₁).1]
+      · simp only [↓reduceIte, hblk]
+        have hsingle : (∑ r : Fin 2 × Fin 3,
+            symToDiagMat K ((e a₁).2, i₁) r * symEps3 K r ((e a₂).2, i₂) l) =
+            I2_eps3 K ((e a₁).2, i₁) ((e a₂).2, i₂) l := by
+          have hm := congrFun (congrFun (congrFun (mapTensor_symToDiagMat_symEps3 K)
+            ((e a₁).2, i₁)) ((e a₂).2, i₂)) l
+          rw [← hm]
+          unfold mapTensor
+          refine Finset.sum_congr rfl fun r _ => ?_
+          rw [Finset.sum_eq_single ((e a₂).2, i₂)]
+          · rw [Finset.sum_eq_single l]
+            · simp
+            · intro l' _ hl'
+              simp [Ne.symm hl']
+            · intro hl
+              exact absurd (Finset.mem_univ l) hl
+          · intro q _ hq
+            simp [Matrix.one_apply, Ne.symm hq]
+          · intro hq
+            exact absurd (Finset.mem_univ _) hq
+        rw [hsingle]
+        have hiff : (e a₁).2 = (e a₂).2 ↔ a₁ = a₂ := by
+          constructor
+          · intro h2; exact e.injective (Prod.ext hblk h2)
+          · intro ha; exact congrArg (fun x => (e x).2) ha
+        simp [I2_eps3, Im_eps3, hiff]
+      · intro b _ hb
+        simp [Ne.symm hb]
+      · intro hb
+        exact absurd (Finset.mem_univ _) hb
+    · have ha_ne : a₁ ≠ a₂ := fun h => hblk (congrArg (fun x => (e x).1) h)
+      simp only [Im_eps3, ha_ne, ↓reduceIte]
+      refine Finset.sum_eq_zero fun b _ => Finset.sum_eq_zero fun r _ => ?_
+      by_cases hb : (e a₁).1 = b
+      · subst hb; simp [hblk]
+      · simp [hb]
+
+lemma symEps3Block_hasSym12FormalBorderRankLe {K : Type*} [CommRing K] {r : ℕ} (hr : 0 < r)
+    (h : HasSym12FormalBorderRankLe (symEps3 K) r) (k : ℕ) :
+    HasSym12FormalBorderRankLe (symEps3Block K k) (r * k) := by
+  rcases h with ⟨d, U₀, W₀, E₀, hT₀⟩
+  let e : Fin (r * k) ≃ Fin k × Fin r := finMulEquiv r k hr
+  refine ⟨d,
+    fun t b => if b.1 = (e t).1 then U₀ (e t).2 b.2 else 0,
+    fun t c => W₀ (e t).2 c,
+    fun b₁ b₂ c => if b₁.1 = b₂.1 then E₀ b₁.2 b₂.2 c else 0,
+    fun b₁ b₂ c => ?_⟩
+  rw [e.sum_comp (fun as =>
+    (if b₁.1 = as.1 then U₀ as.2 b₁.2 else 0) *
+      (if b₂.1 = as.1 then U₀ as.2 b₂.2 else 0) * W₀ as.2 c),
+    Fintype.sum_prod_type]
+  by_cases hblk : b₁.1 = b₂.1
+  · simp only [symEps3Block, hblk, ↓reduceIte]
+    rw [Finset.sum_eq_single b₂.1]
+    · simp only [↓reduceIte]
+      exact hT₀ b₁.2 b₂.2 c
+    · intro a _ ha
+      simp [Ne.symm ha]
+    · intro ha
+      exact absurd (Finset.mem_univ b₂.1) ha
+  · simp only [symEps3Block, hblk, ↓reduceIte, map_zero, zero_mul, mul_zero, add_zero]
+    refine Finset.sum_eq_zero fun a _ => Finset.sum_eq_zero fun s _ => ?_
+    by_cases ha : b₁.1 = a
+    · subst ha
+      simp [Ne.symm hblk]
+    · simp [ha]
+
+lemma symEps3Block_hasSym12RankLe {K : Type*} [CommRing K] {r : ℕ} (hr : 0 < r)
+    (h : HasSym12RankLe (symEps3 K) r) (k : ℕ) :
+    HasSym12RankLe (symEps3Block K k) (r * k) := by
+  rcases h with ⟨u₀, w₀, hT₀⟩
+  let e : Fin (r * k) ≃ Fin k × Fin r := finMulEquiv r k hr
+  refine ⟨fun t b => if b.1 = (e t).1 then u₀ (e t).2 b.2 else 0,
+    fun t c => w₀ (e t).2 c, fun b₁ b₂ c => ?_⟩
+  rw [e.sum_comp (fun as =>
+    (if b₁.1 = as.1 then u₀ as.2 b₁.2 else 0) *
+      (if b₂.1 = as.1 then u₀ as.2 b₂.2 else 0) * w₀ as.2 c),
+    Fintype.sum_prod_type]
+  by_cases hblk : b₁.1 = b₂.1
+  · simp only [symEps3Block, hblk, ↓reduceIte]
+    rw [Finset.sum_eq_single b₂.1]
+    · simp only [↓reduceIte]
+      exact hT₀ b₁.2 b₂.2 c
+    · intro a _ ha
+      simp [Ne.symm ha]
+    · intro ha
+      exact absurd (Finset.mem_univ b₂.1) ha
+  · simp only [symEps3Block, hblk, ↓reduceIte]
+    symm
+    refine Finset.sum_eq_zero fun a _ => Finset.sum_eq_zero fun s _ => ?_
+    by_cases ha : b₁.1 = a
+    · subst ha
+      simp [Ne.symm hblk]
+    · simp [ha]
+
+lemma symEps3_hasSym12RankLe_nine_of_primCubeRoot {K : Type*} [Field K] (h2 : (2 : K) ≠ 0)
+    {ω : K} (hω1 : ω ≠ 1) (hω : ω ^ 2 + ω + 1 = 0) :
+    HasSym12RankLe (symEps3 K) 9 := by
+  rcases (char_ne_three_and_isSquare_neg_three_iff_primCubeRoot h2).mpr ⟨ω, hω1, hω⟩ with
+    ⟨h3, hsq⟩
+  exact symEps3_hasSym12RankLe_nine_of_isSquare_neg_three h2 h3 hsq
+
+/-- Over every field `K` with `(2 : K) ≠ 0` and every `k ≥ 1`, both the `(1,2)`-symmetric and
+ordinary formal algebraic border rank of `symEps3Block K k` (`T̃_{2k}`) equal `9 * k`. -/
+theorem symEps3Block_exact_sym12FormalBorderRank {K : Type*} [Field K] (h2 : (2 : K) ≠ 0)
+    (k : ℕ) (hk : 1 ≤ k) :
+    HasSym12FormalBorderRankLe (symEps3Block K k) (9 * k) ∧
+    (∀ r : ℕ, HasFormalBorderRankLe (symEps3Block K k) r → 9 * k ≤ r) ∧
+    (∀ r : ℕ, HasSym12FormalBorderRankLe (symEps3Block K k) r → 9 * k ≤ r) ∧
+    ¬ HasFormalBorderRankLe (symEps3Block K k) (9 * k - 1) ∧
+    ¬ HasSym12FormalBorderRankLe (symEps3Block K k) (9 * k - 1) := by
+  have hub : HasSym12FormalBorderRankLe (symEps3Block K k) (9 * k) :=
+    symEps3Block_hasSym12FormalBorderRankLe (by decide)
+      (symEps3_hasSym12FormalBorderRankLe_nine h2) k
+  have heq := symEps3Block_equiv_Im_eps3 K k
+  have hge_brk : ∀ r : ℕ, HasFormalBorderRankLe (symEps3Block K k) r → 9 * k ≤ r := by
+    intro r hr
+    have hIm : HasFormalBorderRankLe (Im_eps3 K (2 * k)) r :=
+      (heq.hasFormalBorderRankLe_iff r).mp hr
+    have hlb := Im_eps3_borderRank_ge h2 (2 * k) r hIm
+    omega
+  have hge_sym : ∀ r : ℕ, HasSym12FormalBorderRankLe (symEps3Block K k) r → 9 * k ≤ r :=
+    fun r hr => hge_brk r hr.toFormalBorderRankLe
+  refine ⟨hub, hge_brk, hge_sym, ?_, ?_⟩
+  · intro hlt
+    have := hge_brk (9 * k - 1) hlt
+    omega
+  · intro hlt
+    have := hge_sym (9 * k - 1) hlt
+    omega
+
+/-- Over every field `K` with `(2 : K) ≠ 0` containing a primitive cube root of unity
+(`ω ≠ 1`, `ω ^ 2 + ω + 1 = 0`), for every `k ≥ 1`, both the `(1,2)`-symmetric and ordinary tensor
+rank of `symEps3Block K k` (`T̃_{2k}`) equal `9 * k`. -/
+theorem symEps3Block_exact_sym12Rank_of_primCubeRoot {K : Type*} [Field K] (h2 : (2 : K) ≠ 0)
+    {ω : K} (hω1 : ω ≠ 1) (hω : ω ^ 2 + ω + 1 = 0) (k : ℕ) (hk : 1 ≤ k) :
+    HasSym12RankLe (symEps3Block K k) (9 * k) ∧
+    (∀ r : ℕ, HasTensorRankLe (symEps3Block K k) r → 9 * k ≤ r) ∧
+    (∀ r : ℕ, HasSym12RankLe (symEps3Block K k) r → 9 * k ≤ r) ∧
+    ¬ HasTensorRankLe (symEps3Block K k) (9 * k - 1) ∧
+    ¬ HasSym12RankLe (symEps3Block K k) (9 * k - 1) := by
+  have hub : HasSym12RankLe (symEps3Block K k) (9 * k) :=
+    symEps3Block_hasSym12RankLe (by decide)
+      (symEps3_hasSym12RankLe_nine_of_primCubeRoot h2 hω1 hω) k
+  have hge_brk := (symEps3Block_exact_sym12FormalBorderRank h2 k hk).2.1
+  have hge_rk : ∀ r : ℕ, HasTensorRankLe (symEps3Block K k) r → 9 * k ≤ r :=
+    fun r hr => hge_brk r hr.toFormalBorderRankLe
+  have hge_sym : ∀ r : ℕ, HasSym12RankLe (symEps3Block K k) r → 9 * k ≤ r :=
+    fun r hr => hge_rk r hr.toTensorRankLe
+  refine ⟨hub, hge_rk, hge_sym, ?_, ?_⟩
+  · intro hlt
+    have := hge_rk (9 * k - 1) hlt
+    omega
+  · intro hlt
+    have := hge_sym (9 * k - 1) hlt
+    omega
+
 /-! ## Section 5: Non-Hesse Equiangular Rank-`1` Idempotent Counterexample -/
 
 /-- Vectors `x_{j, t} ∈ K³` at `(a, b, c) = (2, 1, 1)` for `j, t ∈ Fin 3`:
@@ -1313,5 +1676,514 @@ theorem nonHesse_equiangular_idempotents {K : Type*} [Field K]
         ring
       · exact absurd rfl hik
   exact ⟨hpart1, hpart2, hsum3, hpart3, hpart4, hpart5, by decide⟩
+
+/-! ## Section 6: Normalized Koszul Trace (Lemma 5) and Characteristic-`3` Strict Gaps (Theorem 6) -/
+
+/-- The `9m × 9m` Koszul flattening map `F_m` on `(K^m ⊗ K³) ⊗ (K^m ⊗ K³) ⊗ K³`. -/
+abbrev koszulFlatM {K : Type*} [CommRing K] (m : ℕ)
+    (T : Tensor3 K (Fin m × Fin 3) (Fin m × Fin 3) (Fin 3)) :
+    Matrix (Idx9m m) (Idx9m m) K :=
+  linearFlattening (RingHom.id K) (koszulCoeffM K m) T
+
+/-- The `9m × 9m` Koszul flattening matrix `Φ_m = I_m ⊗ Φ` of `Im_eps3 K m`. -/
+abbrev koszulFlat_Im_eps3 (K : Type*) [CommRing K] (m : ℕ) :
+    Matrix (Idx9m m) (Idx9m m) K :=
+  koszulFlatM m (Im_eps3 K m)
+
+/-- Explicit `9m × 9m` block-diagonal inverse `Φ_m⁻¹ = I_m ⊗ Φ⁻¹` of `koszulFlat_Im_eps3 K m`,
+where `Φ⁻¹(B) = (1/2) (Tr B) I₃ - Bᵀ`. -/
+def koszulFlatInv_Im_eps3 (K : Type*) [Field K] (m : ℕ) :
+    Matrix (Idx9m m) (Idx9m m) K :=
+  blockDiagM m (koszulPhi9Inv K)
+
+private lemma blockDiagM_mul {K α : Type*} [CommRing K] [Fintype α] [DecidableEq α]
+    (m : ℕ) (A B : Matrix α α K) :
+    blockDiagM m A * blockDiagM m B = blockDiagM m (A * B) := by
+  ext ⟨a, i⟩ ⟨b, j⟩
+  rw [Matrix.mul_apply, Fintype.sum_prod_type]
+  simp only [blockDiagM]
+  by_cases hab : a = b
+  · subst hab
+    simp only [↓reduceIte, Matrix.mul_apply]
+    rw [Finset.sum_eq_single a]
+    · simp
+    · intro c _ hc
+      simp [Ne.symm hc]
+    · intro ha
+      exact absurd (Finset.mem_univ a) ha
+  · simp only [hab, ↓reduceIte]
+    refine Finset.sum_eq_zero fun c _ => Finset.sum_eq_zero fun k _ => ?_
+    by_cases hac : a = c
+    · subst hac; simp [hab]
+    · simp [hac]
+
+private lemma blockDiagM_one {K α : Type*} [CommRing K] [DecidableEq α] (m : ℕ) :
+    blockDiagM m (1 : Matrix α α K) = 1 := by
+  ext ⟨a, i⟩ ⟨b, j⟩
+  simp only [blockDiagM, Matrix.one_apply, Prod.mk.injEq]
+  by_cases hab : a = b <;> simp [hab]
+
+/-- Over every field `K` with `(2 : K) ≠ 0` and every `m : ℕ`, `koszulFlatInv_Im_eps3 K m` is
+the two-sided inverse of `koszulFlat_Im_eps3 K m`. -/
+theorem koszulFlat_Im_eps3_mul_inv {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) (m : ℕ) :
+    koszulFlat_Im_eps3 K m * koszulFlatInv_Im_eps3 K m = 1 ∧
+    koszulFlatInv_Im_eps3 K m * koszulFlat_Im_eps3 K m = 1 := by
+  rcases koszulPhi9_mul_inv h2 with ⟨hLR, hRL⟩
+  constructor
+  · rw [koszulFlat_Im_eps3, koszulFlatM, koszulFlatM_Im_eps3_eq, koszulFlatInv_Im_eps3,
+      blockDiagM_mul, hLR, blockDiagM_one]
+  · rw [koszulFlat_Im_eps3, koszulFlatM, koszulFlatM_Im_eps3_eq, koszulFlatInv_Im_eps3,
+      blockDiagM_mul, hRL, blockDiagM_one]
+
+private lemma eps3_cyc (K : Type*) [CommRing K] (i j k : Fin 3) :
+    eps3 K k i j = eps3 K i j k := by
+  fin_cases i <;> fin_cases j <;> fin_cases k <;> simp [eps3]
+
+private lemma eps3_swap23 (K : Type*) [CommRing K] (i j k : Fin 3) :
+    eps3 K i k j = -eps3 K i j k := by
+  fin_cases i <;> fin_cases j <;> fin_cases k <;> simp [eps3]
+
+/-- **Lemma 5 (Normalized Koszul trace identity):** Over every field `K` with `(2 : K) ≠ 0` and
+every `m : ℕ`, for every pure tensor `u ⊗ v ⊗ w` on `(K^m ⊗ K³) ⊗ (K^m ⊗ K³) ⊗ K³`,
+`Tr(F_m(u ⊗ v ⊗ w) · Φ_m⁻¹) = (3 / 2) ∑_{a=0}^{m-1} (u_a × v_a)ᵀ w`.
+In particular, this trace vanishes identically whenever `(3 : K) = 0`. -/
+theorem koszulFlat_Im_eps3_normalized_trace {K : Type*} [Field K] (h2 : (2 : K) ≠ 0)
+    (m : ℕ) (u v : Fin m × Fin 3 → K) (w : Fin 3 → K) :
+    Matrix.trace (koszulFlatM m (rankOneTensor u v w) * koszulFlatInv_Im_eps3 K m) =
+      ((3 : K) / 2) *
+        ∑ a : Fin m, dot3 (cross3 (fun i => u (a, i)) (fun j => v (a, j))) w := by
+  simp only [Matrix.trace, Matrix.diag, Finset.mul_sum]
+  rw [Fintype.sum_prod_type]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  have hblk : ∀ x : Idx9,
+      (koszulFlatM m (rankOneTensor u v w) * koszulFlatInv_Im_eps3 K m) (a, x) (a, x) =
+        ∑ y : Idx9,
+          koszulFlatM m (rankOneTensor u v w) (a, x) (a, y) * koszulPhi9Inv K y x := by
+    intro x
+    rw [Matrix.mul_apply, Fintype.sum_prod_type]
+    rw [Finset.sum_eq_single a]
+    · simp [koszulFlatInv_Im_eps3, blockDiagM]
+    · intro b _ hb
+      simp [koszulFlatInv_Im_eps3, blockDiagM, hb]
+    · intro ha
+      exact absurd (Finset.mem_univ a) ha
+  simp_rw [hblk]
+  rw [Fintype.sum_prod_type]
+  have hinner : ∀ j l : Fin 3,
+      (∑ y : Idx9,
+        koszulFlatM m (rankOneTensor u v w) (a, (j, l)) (a, y) * koszulPhi9Inv K y (j, l)) =
+      (if j = l then
+          ∑ i : Fin 3, koszulFlatM m (rankOneTensor u v w) (a, (j, l)) (a, (i, i)) * (2 : K)⁻¹
+        else 0) -
+      koszulFlatM m (rankOneTensor u v w) (a, (j, l)) (a, (l, j)) := by
+    intro j l
+    rw [Fintype.sum_prod_type]
+    simp only [koszulPhi9Inv, mul_sub, Finset.sum_sub_distrib]
+    congr 1
+    · by_cases hjl : j = l
+      · simp only [hjl, true_and, ↓reduceIte]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        rw [Finset.sum_eq_single i]
+        · simp
+        · intro r _ hr
+          simp [Ne.symm hr]
+        · intro hi
+          exact absurd (Finset.mem_univ i) hi
+      · simp [hjl]
+    · rw [Finset.sum_eq_single l]
+      · rw [Finset.sum_eq_single j]
+        · simp
+        · intro r _ hr
+          simp [Ne.symm hr]
+        · intro hj
+          exact absurd (Finset.mem_univ j) hj
+      · intro i _ hi
+        refine Finset.sum_eq_zero fun r _ => ?_
+        simp [Ne.symm hi]
+      · intro hl
+        exact absurd (Finset.mem_univ l) hl
+  simp_rw [hinner, Finset.sum_sub_distrib]
+  have hdiag :
+      (∑ j : Fin 3, ∑ l : Fin 3,
+        if j = l then
+          ∑ i : Fin 3, koszulFlatM m (rankOneTensor u v w) (a, (j, l)) (a, (i, i)) * (2 : K)⁻¹
+        else 0) =
+      ∑ j : Fin 3, ∑ i : Fin 3,
+        koszulFlatM m (rankOneTensor u v w) (a, (j, j)) (a, (i, i)) * (2 : K)⁻¹ := by
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [Finset.sum_eq_single j]
+    · simp
+    · intro l _ hl
+      simp [Ne.symm hl]
+    · intro hj
+      exact absurd (Finset.mem_univ j) hj
+  rw [hdiag, ← Finset.sum_sub_distrib]
+  have hpair : ∀ j i : Fin 3,
+      koszulFlatM m (rankOneTensor u v w) (a, (j, j)) (a, (i, i)) * (2 : K)⁻¹ -
+        koszulFlatM m (rankOneTensor u v w) (a, (j, i)) (a, (i, j)) =
+      ((3 : K) / 2) *
+        ∑ k : Fin 3, eps3 K i j k * (u (a, i) * v (a, j) * w k) := by
+    intro j i
+    rw [koszulFlatM, koszulFlatM_apply, koszulFlatM_apply]
+    simp only [RingHom.id_apply, rankOneTensor]
+    have h1 : (∑ k : Fin 3, eps3 K k i j * (u (a, i) * v (a, j) * w k)) =
+        ∑ k : Fin 3, eps3 K i j k * (u (a, i) * v (a, j) * w k) :=
+      Finset.sum_congr rfl fun k _ => by rw [eps3_cyc]
+    have h2' : (∑ k : Fin 3, eps3 K k j i * (u (a, i) * v (a, j) * w k)) =
+        -(∑ k : Fin 3, eps3 K i j k * (u (a, i) * v (a, j) * w k)) := by
+      rw [← Finset.sum_neg_distrib]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      rw [eps3_swap23, eps3_cyc]
+      ring
+    rw [h1, h2']
+    have h32 : (2 : K)⁻¹ + 1 = (3 : K) / 2 := by field_simp [h2]; ring
+    rw [← h32]
+    ring
+  have hsum_eq :
+      (∑ j : Fin 3,
+        ((∑ i : Fin 3,
+            koszulFlatM m (rankOneTensor u v w) (a, (j, j)) (a, (i, i)) * (2 : K)⁻¹) -
+          ∑ l : Fin 3,
+            koszulFlatM m (rankOneTensor u v w) (a, (j, l)) (a, (l, j)))) =
+      ((3 : K) / 2) *
+        ∑ j : Fin 3, ∑ i : Fin 3, ∑ k : Fin 3, eps3 K i j k * (u (a, i) * v (a, j) * w k) := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [← Finset.sum_sub_distrib, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun i _ => hpair j i
+  rw [hsum_eq]
+  congr 1
+  simp [Fin.sum_univ_three, eps3, dot3, cross3]
+  ring
+
+private lemma char3_two_ne_zero (K : Type*) [Field K] [CharP K 3] : (2 : K) ≠ 0 := by
+  have h3_zero : (3 : K) = 0 := by simpa using (CharP.cast_eq_zero K 3)
+  intro h2_zero
+  have h1 : (1 : K) = (3 : K) - (2 : K) := by ring
+  rw [h3_zero, h2_zero, sub_self] at h1
+  exact one_ne_zero h1
+
+private lemma koszulM_rankOne_factor {K : Type*} [Field K] (m : ℕ)
+    (u v : Fin m × Fin 3 → K) (w : Fin 3 → K) :
+    ∃ (A : Matrix (Idx9m m) (Fin 2) K) (B : Matrix (Fin 2) (Idx9m m) K),
+      koszulFlatM m (rankOneTensor u v w) = A * B := by
+  by_cases hw : w = 0
+  · refine ⟨0, 0, ?_⟩
+    rw [Matrix.zero_mul]
+    ext row col
+    rw [koszulFlatM, koszulFlatM_apply]
+    simp [rankOneTensor, hw]
+  · obtain ⟨b₀, b₁, c₀, c₁, _, _, _, _, _, _, _, hspan⟩ := exists_perp_basis_of_ne_zero hw
+    refine ⟨Matrix.of fun row t => v (row.1, row.2.1) * (if t = 0 then b₀ row.2.2 else b₁ row.2.2),
+      Matrix.of fun t col => u (col.1, col.2.1) *
+        (if t = 0 then c₀ (cross3 w (stdBasis3 col.2.2))
+         else c₁ (cross3 w (stdBasis3 col.2.2))), ?_⟩
+    ext row col
+    rw [koszulFlatM, koszulFlatM_apply, Matrix.mul_apply]
+    simp only [Fin.sum_univ_two, Matrix.of_apply, Fin.isValue, ↓reduceIte, one_ne_zero,
+      RingHom.id_apply]
+    have hcr_perp : dot3 w (cross3 w (stdBasis3 col.2.2)) = 0 :=
+      dot3_cross3_self_left w (stdBasis3 col.2.2)
+    have hdecomp := congrFun (hspan (cross3 w (stdBasis3 col.2.2)) hcr_perp) row.2.2
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul] at hdecomp
+    calc ∑ k : Fin 3, eps3 K k col.2.2 row.2.2 *
+            rankOneTensor u v w (col.1, col.2.1) (row.1, row.2.1) k
+        = u (col.1, col.2.1) * v (row.1, row.2.1) *
+            ∑ k : Fin 3, eps3 K k col.2.2 row.2.2 * w k := by
+            rw [Finset.mul_sum]
+            refine Finset.sum_congr rfl fun k _ => ?_
+            simp only [rankOneTensor]
+            ring
+      _ = u (col.1, col.2.1) * v (row.1, row.2.1) *
+            cross3 w (stdBasis3 col.2.2) row.2.2 := by
+            rw [sum_eps3_mul_eq_cross3_stdBasis]
+      _ = v (row.1, row.2.1) * b₀ row.2.2 *
+            (u (col.1, col.2.1) * c₀ (cross3 w (stdBasis3 col.2.2))) +
+          v (row.1, row.2.1) * b₁ row.2.2 *
+            (u (col.1, col.2.1) * c₁ (cross3 w (stdBasis3 col.2.2))) := by
+            rw [hdecomp]; ring
+
+/-- Private square rank-saturation trace helper: if `r` matrices of the form `A t * C t`
+(factoring through `Fin 2`) sum to the `N × N` identity with `N = 2 * r`, then each summand
+has trace `(2 : K)` over any commutative ring `K`. -/
+private lemma trace_eq_two_of_saturated_factor {K M : Type*} [CommRing K]
+    [Fintype M] [DecidableEq M] {r : ℕ}
+    (hcard : Fintype.card M = r * 2)
+    (A : Fin r → Matrix M (Fin 2) K) (C : Fin r → Matrix (Fin 2) M K)
+    (hsum : ∑ t : Fin r, A t * C t = 1) (t : Fin r) :
+    Matrix.trace (A t * C t) = (2 : K) := by
+  let A_big : Matrix M (Fin r × Fin 2) K := fun row ts => A ts.1 row ts.2
+  let C_big : Matrix (Fin r × Fin 2) M K := fun ts col => C ts.1 ts.2 col
+  have hAC : A_big * C_big = 1 := by
+    rw [← hsum]
+    ext row col
+    rw [Matrix.mul_apply, Fintype.sum_prod_type, Matrix.sum_apply]
+    refine Finset.sum_congr rfl fun s _ => ?_
+    rw [Matrix.mul_apply]
+  have hcard_eq : Fintype.card M = Fintype.card (Fin r × Fin 2) := by
+    rw [hcard, Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
+  let e : M ≃ Fin r × Fin 2 := Fintype.equivOfCardEq hcard_eq
+  have hCA : C_big * A_big = 1 := matrix_mul_eq_one_comm_of_equiv e hAC
+  have hCA_diag : C t * A t = 1 := by
+    ext s₁ s₂
+    have hent := congrFun (congrFun hCA (t, s₁)) (t, s₂)
+    rw [Matrix.mul_apply] at hent ⊢
+    simpa [C_big, A_big, Matrix.one_apply] using hent
+  rw [Matrix.trace_mul_comm, hCA_diag]
+  simp [Matrix.trace, Matrix.diag]
+
+/-- **Theorem 6 (Uniform characteristic-`3` lower bound for `T_m = I_m ⊗₁,₂ ε₃`):**
+Over every field `K` of characteristic `3` (including `AlgebraicClosure (ZMod 3)`) and every
+`m ≥ 1`, `rank_K(Im_eps3 K m) ≥ ⌊9m / 2⌋ + 1`. -/
+theorem Im_eps3_char3_rank_ge_floor_add_one (K : Type*) [Field K] [CharP K 3]
+    (m : ℕ) (hm : 1 ≤ m) :
+    (∀ r : ℕ, HasTensorRankLe (Im_eps3 K m) r → (9 * m) / 2 + 1 ≤ r) ∧
+    ¬ HasTensorRankLe (Im_eps3 K m) ((9 * m) / 2) := by
+  have h2 : (2 : K) ≠ 0 := char3_two_ne_zero K
+  have h3_zero : (3 : K) = 0 := by simpa using (CharP.cast_eq_zero K 3)
+  have hge : ∀ r : ℕ, HasTensorRankLe (Im_eps3 K m) r → (9 * m) / 2 + 1 ≤ r := by
+    intro r hr
+    have hbrk : (9 * m + 1) / 2 ≤ r :=
+      Im_eps3_borderRank_ge h2 m r hr.toFormalBorderRankLe
+    by_contra hlt
+    have h2r : 2 * r = 9 * m := by omega
+    have hr_pos : 0 < r := by omega
+    rcases hr with ⟨u, v, w, hT⟩
+    let L : Fin r → Matrix (Idx9m m) (Idx9m m) K :=
+      fun t => koszulFlatM m (rankOneTensor (u t) (v t) (w t))
+    let P : Fin r → Matrix (Idx9m m) (Idx9m m) K :=
+      fun t => L t * koszulFlatInv_Im_eps3 K m
+    have hL_sum : ∑ t : Fin r, L t = koszulFlat_Im_eps3 K m := by
+      dsimp [L, koszulFlat_Im_eps3, koszulFlatM]
+      rw [← linearFlattening_sum]
+      congr 1
+      funext p q k
+      exact (hT p q k).symm
+    have hP_sum : ∑ t : Fin r, P t = 1 := by
+      dsimp [P]
+      rw [← Finset.sum_mul, hL_sum, (koszulFlat_Im_eps3_mul_inv h2 m).1]
+    have hfac : ∀ t : Fin r,
+        ∃ (A : Matrix (Idx9m m) (Fin 2) K) (B : Matrix (Fin 2) (Idx9m m) K), L t = A * B :=
+      fun t => koszulM_rankOne_factor m (u t) (v t) (w t)
+    choose A B hAB using hfac
+    let C : Fin r → Matrix (Fin 2) (Idx9m m) K := fun t => B t * koszulFlatInv_Im_eps3 K m
+    have hP_fac : ∀ t : Fin r, P t = A t * C t := by
+      intro t
+      dsimp [P, C]
+      rw [hAB t, Matrix.mul_assoc]
+    have hAC_sum : ∑ t : Fin r, A t * C t = 1 := by
+      simpa [hP_fac] using hP_sum
+    have hcard : Fintype.card (Idx9m m) = r * 2 := by
+      rw [Fintype.card_prod, Fintype.card_fin]
+      have h9 : Fintype.card Idx9 = 9 := by decide
+      rw [h9]
+      omega
+    let t0 : Fin r := ⟨0, hr_pos⟩
+    have htr_two : Matrix.trace (P t0) = (2 : K) := by
+      rw [hP_fac t0]
+      exact trace_eq_two_of_saturated_factor hcard A C hAC_sum t0
+    have htr_zero : Matrix.trace (P t0) = 0 := by
+      dsimp [P, L]
+      rw [koszulFlat_Im_eps3_normalized_trace h2 m (u t0) (v t0) (w t0), h3_zero, zero_div,
+        zero_mul]
+    exact h2 (htr_two.symm.trans htr_zero)
+  exact ⟨hge, fun hle => absurd (hge ((9 * m) / 2) hle) (by omega)⟩
+
+/-- **Theorem 6 (Strict characteristic-`3` border-rank gap for `T_{2k}`):**
+Over every field `K` of characteristic `3` and every `k ≥ 1`, `Im_eps3 K (2 * k)` has formal
+border rank `9 * k` while its tensor rank is at least `9 * k + 1`. -/
+theorem Im_eps3_even_char3_strict_gap (K : Type*) [Field K] [CharP K 3]
+    (k : ℕ) (hk : 1 ≤ k) :
+    HasFormalBorderRankLe (Im_eps3 K (2 * k)) (9 * k) ∧
+    (∀ r : ℕ, HasTensorRankLe (Im_eps3 K (2 * k)) r → 9 * k + 1 ≤ r) ∧
+    ¬ HasTensorRankLe (Im_eps3 K (2 * k)) (9 * k) := by
+  have h2 : (2 : K) ≠ 0 := char3_two_ne_zero K
+  have hbrk_raw := (Im_eps3_exact_formalBorderRank h2 (m := 2 * k) (by omega)).1
+  have hbrk : HasFormalBorderRankLe (Im_eps3 K (2 * k)) (9 * k) := by
+    have harith : (9 * (2 * k) + 1) / 2 = 9 * k := by omega
+    rwa [harith] at hbrk_raw
+  have hge_raw := (Im_eps3_char3_rank_ge_floor_add_one K (2 * k) (by omega)).1
+  have hge : ∀ r : ℕ, HasTensorRankLe (Im_eps3 K (2 * k)) r → 9 * k + 1 ≤ r := by
+    intro r hr
+    have h := hge_raw r hr
+    omega
+  exact ⟨hbrk, hge, fun h9k => absurd (hge (9 * k) h9k) (by omega)⟩
+
+/-- **Theorem 6 (Strict characteristic-`3` gap for `(1,2)`-symmetric `symEps3Block K k`):**
+Over every field `K` of characteristic `3` and every `k ≥ 1`, `symEps3Block K k` (`T̃_{2k}`)
+has `(1,2)`-symmetric formal border rank `9 * k`, while both its ordinary and `(1,2)`-symmetric
+tensor ranks are at least `9 * k + 1`. -/
+theorem symEps3Block_char3_strict_gap (K : Type*) [Field K] [CharP K 3]
+    (k : ℕ) (hk : 1 ≤ k) :
+    HasSym12FormalBorderRankLe (symEps3Block K k) (9 * k) ∧
+    (∀ r : ℕ, HasTensorRankLe (symEps3Block K k) r → 9 * k + 1 ≤ r) ∧
+    (∀ r : ℕ, HasSym12RankLe (symEps3Block K k) r → 9 * k + 1 ≤ r) ∧
+    ¬ HasTensorRankLe (symEps3Block K k) (9 * k) ∧
+    ¬ HasSym12RankLe (symEps3Block K k) (9 * k) := by
+  have h2 : (2 : K) ≠ 0 := char3_two_ne_zero K
+  have hbs := (symEps3Block_exact_sym12FormalBorderRank h2 k hk).1
+  have heq := symEps3Block_equiv_Im_eps3 K k
+  have hge_Im := (Im_eps3_even_char3_strict_gap K k hk).2.1
+  have hge_rk : ∀ r : ℕ, HasTensorRankLe (symEps3Block K k) r → 9 * k + 1 ≤ r :=
+    fun r hr => hge_Im r ((heq.hasTensorRankLe_iff r).mp hr)
+  have hge_sym : ∀ r : ℕ, HasSym12RankLe (symEps3Block K k) r → 9 * k + 1 ≤ r :=
+    fun r hr => hge_rk r hr.toTensorRankLe
+  exact ⟨hbs, hge_rk, hge_sym,
+    fun h9k => absurd (hge_rk (9 * k) h9k) (by omega),
+    fun h9k => absurd (hge_sym (9 * k) h9k) (by omega)⟩
+
+/-! ## Section 7: Explicit 14-Term `ℤ[1/2]` KGP Identity for `T_3` and Corollary 7 (`T_4, T_6`) -/
+
+/-- Mode-1 integer factors of the `14`-term `ℤ[1/2]` decomposition of `Im_eps3 K 3`
+converted from the `14`-product scheme of Khoruzhii, Gelß, and Pokutta (`arXiv:2511.10786`). -/
+def kgpUInt (t : Fin 14) (p : Fin 3 × Fin 3) : ℤ :=
+  let row : Fin 9 → ℤ :=
+    match t.val with
+    | 0  => ![1, 0, -1, -1, 0, 1, 0, 1, 0]
+    | 1  => ![1, 0, 0, 0, 0, 1, 0, 1, -1]
+    | 2  => ![1, 1, -1, -1, -1, 1, 0, -1, 0]
+    | 3  => ![1, 0, 0, 1, 1, 0, -1, 0, 0]
+    | 4  => ![1, 1, 0, 0, 0, -1, 0, -1, 1]
+    | 5  => ![1, 0, 0, 0, 0, -1, 0, 1, 1]
+    | 6  => ![0, 0, 1, 0, 0, 1, 0, 1, -1]
+    | 7  => ![0, 0, -1, 1, 0, 0, 0, 0, 1]
+    | 8  => ![0, 0, 1, 1, 1, 0, 0, 0, -1]
+    | 9  => ![0, 0, 0, 0, 0, 0, 2, 1, 0]
+    | 10 => ![1, 1, 1, -1, -1, -1, 0, -1, 0]
+    | 11 => ![0, 0, 1, 0, 0, 1, 0, 2, -1]
+    | 12 => ![0, 0, -1, 0, 0, 1, 2, 1, 1]
+    | _  => ![1, -1, 0, 1, 2, 0, -1, 1, 0]
+  row ⟨3 * p.1.val + p.2.val, by omega⟩
+
+/-- Mode-2 integer factors of the `14`-term `ℤ[1/2]` decomposition of `Im_eps3 K 3`
+converted from Khoruzhii, Gelß, and Pokutta (`arXiv:2511.10786`). -/
+def kgpVInt (t : Fin 14) (q : Fin 3 × Fin 3) : ℤ :=
+  let row : Fin 9 → ℤ :=
+    match t.val with
+    | 0  => ![2, 1, 0, 1, 1, -1, 1, 1, 0]
+    | 1  => ![-1, -1, 1, -1, -1, 1, 0, -1, 0]
+    | 2  => ![-1, -1, -1, 0, 0, 0, -1, -1, 0]
+    | 3  => ![2, 1, 0, 0, 0, 0, 1, 2, 0]
+    | 4  => ![1, 0, 1, 1, 0, 1, 0, -1, 0]
+    | 5  => ![1, 0, -1, 0, 0, 0, 1, 0, 0]
+    | 6  => ![0, -2, -2, 0, -2, 0, 0, -2, -1]
+    | 7  => ![-2, -1, 0, -1, -1, -1, -1, -1, 0]
+    | 8  => ![1, 0, -1, 1, 0, -1, 0, -1, 0]
+    | 9  => ![-2, -1, 0, -2, -1, 0, -2, -1, -1]
+    | 10 => ![-2, -1, 0, -1, 0, -1, -1, 0, 0]
+    | 11 => ![0, 1, 2, 0, 1, 0, 0, 1, 1]
+    | 12 => ![2, 1, 0, 2, 1, 0, 2, 1, 0]
+    | _  => ![-2, -1, 0, 0, 0, 0, -1, -1, 0]
+  row ⟨3 * q.1.val + q.2.val, by omega⟩
+
+/-- Twice the mode-3 factors of the `14`-term `ℤ[1/2]` decomposition of `Im_eps3 K 3`
+converted from Khoruzhii, Gelß, and Pokutta (`arXiv:2511.10786`); every entry lies in
+`{-2, -1, 0, 1, 2}`, so the true mode-3 factors `(1/2) • kgpWInt` lie in `ℤ[1/2]`. -/
+def kgpWInt (t : Fin 14) (k : Fin 3) : ℤ :=
+  let row : Fin 3 → ℤ :=
+    match t.val with
+    | 0  => ![-1, -1, -1]
+    | 1  => ![-1, -1, -1]
+    | 2  => ![-1, 0, -1]
+    | 3  => ![0, 0, -2]
+    | 4  => ![1, 0, -1]
+    | 5  => ![1, 1, -1]
+    | 6  => ![2, 1, 0]
+    | 7  => ![1, 1, -1]
+    | 8  => ![-1, 0, -1]
+    | 9  => ![0, 1, 0]
+    | 10 => ![1, 0, -1]
+    | 11 => ![2, 1, 0]
+    | 12 => ![0, 1, 0]
+    | _  => ![0, 0, -2]
+  row k
+
+private lemma kgp_int_identity :
+    ∀ (p q : Fin 3 × Fin 3) (k : Fin 3),
+      (∑ t : Fin 14, kgpUInt t p * kgpVInt t q * kgpWInt t k) = 2 * Im_eps3 ℤ 3 p q k := by
+  decide
+
+private lemma cast_Im_eps3_int {K : Type*} [CommRing K] (p q : Fin 3 × Fin 3) (k : Fin 3) :
+    ((Im_eps3 ℤ 3 p q k : ℤ) : K) = Im_eps3 K 3 p q k := by
+  simp only [Im_eps3]
+  split_ifs
+  · exact map_eps3 (Int.castRingHom K) p.2 q.2 k
+  · simp
+
+/-- **Explicit `14`-term `ℤ[1/2]` decomposition of `T_3 = I_3 ⊗₁,₂ ε₃` (Khoruzhii–Gelß–Pokutta,
+`arXiv:2511.10786`):** Over every field `K` with `(2 : K) ≠ 0`, `Im_eps3 K 3` has tensor rank
+at most `14`. -/
+theorem I3_eps3_hasTensorRankLe_fourteen {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) :
+    HasTensorRankLe (Im_eps3 K 3) 14 := by
+  refine ⟨fun t p => (kgpUInt t p : K), fun t q => (kgpVInt t q : K),
+    fun t k => (2 : K)⁻¹ * (kgpWInt t k : K), fun p q k => ?_⟩
+  have hZ := congrArg (Int.cast (R := K)) (kgp_int_identity p q k)
+  simp only [Int.cast_sum, Int.cast_mul, Int.cast_ofNat, cast_Im_eps3_int] at hZ
+  have hsum :
+      (∑ t : Fin 14, (kgpUInt t p : K) * (kgpVInt t q : K) * ((2 : K)⁻¹ * (kgpWInt t k : K))) =
+        (2 : K)⁻¹ * ∑ t : Fin 14, (kgpUInt t p : K) * (kgpVInt t q : K) * (kgpWInt t k : K) := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl fun t _ => ?_
+    ring
+  rw [hsum, hZ, ← mul_assoc, inv_mul_cancel₀ h2, one_mul]
+
+/-- **Exact rank `14` of `T_3 = I_3 ⊗₁,₂ ε₃` over every field `K` with `char K ≠ 2`:**
+Combining the explicit `14`-term `ℤ[1/2]` Khoruzhii–Gelß–Pokutta scheme (`arXiv:2511.10786`) with
+the universal `27 × 27` Koszul flattening lower bound `⌈27 / 2⌉ = 14`, `rank_K(T_3) = 14` over
+*every* field `K` with `(2 : K) ≠ 0` (including `ℚ`, `ℝ`, and characteristic `3`). -/
+theorem I3_eps3_exact_rank_fourteen {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) :
+    HasTensorRankLe (Im_eps3 K 3) 14 ∧
+    (∀ r : ℕ, HasTensorRankLe (Im_eps3 K 3) r → 14 ≤ r) ∧
+    ¬ HasTensorRankLe (Im_eps3 K 3) 13 := by
+  have hge : ∀ r : ℕ, HasTensorRankLe (Im_eps3 K 3) r → 14 ≤ r := by
+    intro r hr
+    have h := Im_eps3_borderRank_ge h2 3 r hr.toFormalBorderRankLe
+    omega
+  exact ⟨I3_eps3_hasTensorRankLe_fourteen h2, hge,
+    fun h13 => absurd (hge 13 h13) (by omega)⟩
+
+/-- Nonsplit upper bound `rank_K(T_4) ≤ 19` over every field `K` with `(2 : K) ≠ 0`, via
+`T_4 = T_3 ⊕₁,₂ T_1` (`14 + 5 = 19`). -/
+theorem I4_eps3_hasTensorRankLe_nineteen {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) :
+    HasTensorRankLe (Im_eps3 K 4) 19 :=
+  Im_eps3_add_hasTensorRankLe
+    (I3_eps3_hasTensorRankLe_fourteen h2)
+    (Im_eps3_one_hasTensorRankLe (eps3_hasTensorRankLe_five h2))
+
+/-- Nonsplit upper bound `rank_K(T_5) ≤ 24` over every field `K` with `(2 : K) ≠ 0`, via
+`T_5 = T_4 ⊕₁,₂ T_1` (`19 + 5 = 24`). -/
+theorem I5_eps3_hasTensorRankLe_twentyfour {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) :
+    HasTensorRankLe (Im_eps3 K 5) 24 :=
+  Im_eps3_add_hasTensorRankLe
+    (I4_eps3_hasTensorRankLe_nineteen h2)
+    (Im_eps3_one_hasTensorRankLe (eps3_hasTensorRankLe_five h2))
+
+/-- Nonsplit upper bound `rank_K(T_6) ≤ 28` over every field `K` with `(2 : K) ≠ 0`, via
+`T_6 = T_3 ⊕₁,₂ T_3` (`14 + 14 = 28`). -/
+theorem I6_eps3_hasTensorRankLe_twentyeight {K : Type*} [Field K] (h2 : (2 : K) ≠ 0) :
+    HasTensorRankLe (Im_eps3 K 6) 28 :=
+  Im_eps3_add_hasTensorRankLe
+    (I3_eps3_hasTensorRankLe_fourteen h2)
+    (I3_eps3_hasTensorRankLe_fourteen h2)
+
+/-- **Corollary 7 (`T_4` in characteristic `3`):** Over every field `K` of characteristic `3`,
+`Im_eps3 K 4` has exact tensor rank `19` alongside formal border rank `18`. -/
+theorem I4_eps3_char3_exact_rank_nineteen (K : Type*) [Field K] [CharP K 3] :
+    HasTensorRankLe (Im_eps3 K 4) 19 ∧
+    ¬ HasTensorRankLe (Im_eps3 K 4) 18 ∧
+    HasFormalBorderRankLe (Im_eps3 K 4) 18 := by
+  have h2 : (2 : K) ≠ 0 := char3_two_ne_zero K
+  rcases Im_eps3_even_char3_strict_gap K 2 (by omega) with ⟨hbrk, _, hn18⟩
+  exact ⟨I4_eps3_hasTensorRankLe_nineteen h2, hn18, hbrk⟩
+
+/-- **Corollary 7 (`T_6` in characteristic `3`):** Over every field `K` of characteristic `3`,
+`Im_eps3 K 6` has exact tensor rank `28` alongside formal border rank `27`. -/
+theorem I6_eps3_char3_exact_rank_twentyeight (K : Type*) [Field K] [CharP K 3] :
+    HasTensorRankLe (Im_eps3 K 6) 28 ∧
+    ¬ HasTensorRankLe (Im_eps3 K 6) 27 ∧
+    HasFormalBorderRankLe (Im_eps3 K 6) 27 := by
+  have h2 : (2 : K) ≠ 0 := char3_two_ne_zero K
+  rcases Im_eps3_even_char3_strict_gap K 3 (by omega) with ⟨hbrk, _, hn27⟩
+  exact ⟨I6_eps3_hasTensorRankLe_twentyeight h2, hn27, hbrk⟩
 
 end SemaevRCB
